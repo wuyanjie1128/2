@@ -18,14 +18,13 @@ APP_SUBTITLE = "Premium Fresh Meal Intelligence for Dogs"
 
 st.set_page_config(
     page_title=APP_TITLE,
-    page_icon="🐾",
+    page_icon="🐶🍲",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
 CUSTOM_CSS = """
 <style>
-/* --- Global background --- */
 .stApp {
     background:
         radial-gradient(1200px 800px at 10% 10%, rgba(120, 140, 255, 0.16), transparent 60%),
@@ -35,18 +34,13 @@ CUSTOM_CSS = """
     color: #F5F7FF;
 }
 
-/* --- Headers --- */
-h1, h2, h3, h4 {
-    letter-spacing: 0.4px;
-}
+h1, h2, h3, h4 { letter-spacing: 0.4px; }
 
-/* --- Sidebar styling --- */
 section[data-testid="stSidebar"] {
     background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
     border-right: 1px solid rgba(255,255,255,0.06);
 }
 
-/* --- Cards --- */
 .nebula-card {
     background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
     border: 1px solid rgba(255,255,255,0.08);
@@ -55,14 +49,12 @@ section[data-testid="stSidebar"] {
     box-shadow: 0 10px 30px rgba(0,0,0,0.25);
 }
 
-/* --- Subtle glow separators --- */
 .nebula-divider {
     height: 1px;
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
     margin: 14px 0 18px 0;
 }
 
-/* --- Buttons --- */
 .stButton > button {
     border-radius: 14px;
     border: 1px solid rgba(255,255,255,0.10);
@@ -75,19 +67,14 @@ section[data-testid="stSidebar"] {
     transform: translateY(-1px);
 }
 
-/* --- Inputs --- */
 div[data-baseweb="select"] > div,
 div[data-baseweb="input"] > div {
     background-color: rgba(255,255,255,0.04) !important;
     border-radius: 10px;
 }
 
-/* --- Tables --- */
-thead tr th {
-    background-color: rgba(255,255,255,0.06) !important;
-}
+thead tr th { background-color: rgba(255,255,255,0.06) !important; }
 
-/* --- Small badge --- */
 .badge {
     display: inline-block;
     padding: 2px 8px;
@@ -130,213 +117,216 @@ class RatioPreset:
 
 
 # =========================
-# Ingredient Knowledge Base
-# Approximate values for cooked food.
+# Ingredient Knowledge Base (expanded)
+# Approximate cooked values.
 # =========================
 
 def build_ingredients() -> Dict[str, Ingredient]:
     items = [
-        # --- Meats ---
-        Ingredient(
-            name="Chicken (lean, cooked)",
-            category="Meat",
-            kcal_per_100g=165, protein_g=31, fat_g=3.6, carbs_g=0,
-            micronote="B vitamins, selenium.",
-            benefits=["High-quality protein for muscle maintenance",
-                      "Generally well tolerated",
-                      "Good base protein for rotation diets"],
-            cautions=["Avoid if chicken allergy suspected",
-                      "Remove skin to reduce fat if pancreatitis risk"]
-        ),
-        Ingredient(
-            name="Turkey (lean, cooked)",
-            category="Meat",
-            kcal_per_100g=150, protein_g=29, fat_g=2.0, carbs_g=0,
-            micronote="Niacin, selenium.",
-            benefits=["Lean protein option",
-                      "Useful for weight-aware plans",
-                      "Mild flavor for picky dogs"],
-            cautions=["Monitor sodium if using deli-style products (avoid those)"]
-        ),
-        Ingredient(
-            name="Beef (lean, cooked)",
-            category="Meat",
-            kcal_per_100g=200, protein_g=26, fat_g=10, carbs_g=0,
-            micronote="Iron, zinc, B12.",
-            benefits=["Supports red blood cell health",
-                      "Rich in iron and zinc",
-                      "Great for active adult dogs"],
-            cautions=["Higher fat than poultry depending on cut",
-                      "Avoid if beef allergy suspected"]
-        ),
-        Ingredient(
-            name="Lamb (lean, cooked)",
-            category="Meat",
-            kcal_per_100g=206, protein_g=25, fat_g=12, carbs_g=0,
-            micronote="Zinc, carnitine.",
-            benefits=["Alternative protein for rotation",
-                      "Palatable for picky eaters",
-                      "Useful if poultry sensitivity"],
-            cautions=["Can be richer; adjust for pancreatitis risk"]
-        ),
-        Ingredient(
-            name="Pork (lean, cooked)",
-            category="Meat",
-            kcal_per_100g=195, protein_g=27, fat_g=9, carbs_g=0,
-            micronote="Thiamine.",
-            benefits=["Thiamine-rich protein",
-                      "Good rotation option",
-                      "Often highly palatable"],
-            cautions=["Use lean cuts; avoid processed pork"]
-        ),
-        Ingredient(
-            name="Salmon (cooked)",
-            category="Meat",
-            kcal_per_100g=208, protein_g=20, fat_g=13, carbs_g=0,
-            micronote="Omega-3, vitamin D.",
-            benefits=["Supports skin/coat health",
-                      "Anti-inflammatory fatty acids",
-                      "Great for senior/joint-focused plans"],
-            cautions=["Higher fat; portion carefully",
-                      "Remove bones; cook thoroughly"]
-        ),
-        Ingredient(
-            name="White Fish (cod, cooked)",
-            category="Meat",
-            kcal_per_100g=105, protein_g=23, fat_g=0.9, carbs_g=0,
-            micronote="Iodine, selenium.",
-            benefits=["Very lean protein",
-                      "Good for sensitive stomach",
-                      "Helpful for weight management"],
-            cautions=["Ensure it is plain without seasoning"]
-        ),
+        # --- Meats / Proteins ---
+        Ingredient("Chicken (lean, cooked)", "Meat", 165, 31, 3.6, 0,
+                   "B vitamins, selenium.",
+                   ["High-quality protein for muscle maintenance",
+                    "Generally well tolerated",
+                    "Good base protein for rotation diets"],
+                   ["Avoid if chicken allergy suspected",
+                    "Remove skin to reduce fat if pancreatitis risk"]),
 
-        # --- Veggies ---
-        Ingredient(
-            name="Pumpkin (cooked)",
-            category="Veg",
-            kcal_per_100g=26, protein_g=1, fat_g=0.1, carbs_g=6.5,
-            micronote="Beta-carotene, soluble fiber.",
-            benefits=["Supports stool quality",
-                      "Gentle fiber for GI health",
-                      "Helpful in transition periods"],
-            cautions=["Too much can reduce calorie density"]
-        ),
-        Ingredient(
-            name="Carrot (cooked)",
-            category="Veg",
-            kcal_per_100g=35, protein_g=0.8, fat_g=0.2, carbs_g=8,
-            micronote="Beta-carotene.",
-            benefits=["Antioxidant support",
-                      "Crunchy option when lightly cooked",
-                      "Low calorie nutrient boost"],
-            cautions=["Chop/soften for small dogs"]
-        ),
-        Ingredient(
-            name="Broccoli (cooked)",
-            category="Veg",
-            kcal_per_100g=34, protein_g=2.8, fat_g=0.4, carbs_g=7,
-            micronote="Vitamin C, K, sulforaphane.",
-            benefits=["Antioxidant-rich",
-                      "Adds micronutrient diversity",
-                      "Good rotation vegetable"],
-            cautions=["Large amounts may cause gas"]
-        ),
-        Ingredient(
-            name="Zucchini (cooked)",
-            category="Veg",
-            kcal_per_100g=17, protein_g=1.2, fat_g=0.3, carbs_g=3.1,
-            micronote="Hydration-friendly veggie.",
-            benefits=["Great for volumizing meals",
-                      "Very low calorie",
-                      "Mild taste for picky dogs"],
-            cautions=["Avoid seasoning"]
-        ),
-        Ingredient(
-            name="Spinach (cooked, small portions)",
-            category="Veg",
-            kcal_per_100g=23, protein_g=2.9, fat_g=0.4, carbs_g=3.6,
-            micronote="Folate, magnesium.",
-            benefits=["Adds micronutrient variety",
-                      "Useful in rotation plans",
-                      "Supports overall antioxidant intake"],
-            cautions=["Use small portions due to oxalates"]
-        ),
-        Ingredient(
-            name="Green Beans (cooked)",
-            category="Veg",
-            kcal_per_100g=31, protein_g=1.8, fat_g=0.1, carbs_g=7,
-            micronote="Fiber and low-calorie bulk.",
-            benefits=["Helpful for weight management",
-                      "Gentle fiber",
-                      "Good texture variety"],
-            cautions=[]
-        ),
+        Ingredient("Turkey (lean, cooked)", "Meat", 150, 29, 2.0, 0,
+                   "Niacin, selenium.",
+                   ["Lean protein option", "Useful for weight-aware plans", "Mild flavor for picky dogs"],
+                   ["Avoid processed/deli products"]),
+
+        Ingredient("Beef (lean, cooked)", "Meat", 200, 26, 10, 0,
+                   "Iron, zinc, B12.",
+                   ["Supports red blood cell health", "Rich in iron and zinc", "Great for active adult dogs"],
+                   ["Higher fat depending on cut", "Avoid if beef allergy suspected"]),
+
+        Ingredient("Lamb (lean, cooked)", "Meat", 206, 25, 12, 0,
+                   "Zinc, carnitine.",
+                   ["Alternative protein for rotation", "High palatability", "Useful if poultry sensitivity"],
+                   ["Can be richer; adjust for pancreatitis risk"]),
+
+        Ingredient("Pork (lean, cooked)", "Meat", 195, 27, 9, 0,
+                   "Thiamine-rich protein.",
+                   ["Good rotation option", "Often highly palatable", "Supports energy metabolism"],
+                   ["Use lean cuts; avoid processed pork"]),
+
+        Ingredient("Duck (lean, cooked)", "Meat", 190, 24, 11, 0,
+                   "Rich flavor, B vitamins.",
+                   ["Great for rotation", "Useful for dogs bored of poultry", "High palatability"],
+                   ["Moderate fat; manage for pancreatitis risk"]),
+
+        Ingredient("Venison (lean, cooked)", "Meat", 158, 30, 3.2, 0,
+                   "Often considered novel protein.",
+                   ["Good for rotation", "Potential option for some allergy plans", "Lean and nutrient-dense"],
+                   ["Novel protein strategies should be vet-guided"]),
+
+        Ingredient("Rabbit (cooked)", "Meat", 173, 33, 3.5, 0,
+                   "Very lean, novel option.",
+                   ["Lean protein", "Rotation diversity", "Often well tolerated"],
+                   ["Ensure sourcing and thorough cooking"]),
+
+        Ingredient("Sardines (cooked, deboned)", "Meat", 208, 25, 11, 0,
+                   "Omega-3, calcium (if bones removed, less).",
+                   ["Skin/coat support", "High palatability", "Good micro-fatty acids"],
+                   ["Watch sodium if canned; choose no-salt when possible"]),
+
+        Ingredient("Egg (cooked)", "Meat", 155, 13, 11, 1.1,
+                   "Complete amino acid profile.",
+                   ["Excellent protein quality", "Palatability booster", "Good for rotation variety"],
+                   ["Introduce gradually for sensitive stomachs"]),
+
+        Ingredient("Salmon (cooked)", "Meat", 208, 20, 13, 0,
+                   "Omega-3, vitamin D.",
+                   ["Supports skin/coat health", "Anti-inflammatory fatty acids", "Great for senior/joint-focused plans"],
+                   ["Higher fat; portion carefully", "Remove bones; cook thoroughly"]),
+
+        Ingredient("White Fish (cod, cooked)", "Meat", 105, 23, 0.9, 0,
+                   "Very lean protein.",
+                   ["Great for weight management", "Gentle for sensitive stomach", "Clean taste"],
+                   ["Ensure plain cooking"]),
+
+        # --- Vegetables ---
+        Ingredient("Pumpkin (cooked)", "Veg", 26, 1, 0.1, 6.5,
+                   "Beta-carotene, soluble fiber.",
+                   ["Supports stool quality", "Gentle fiber for GI health", "Helpful in transition periods"],
+                   ["Too much can reduce calorie density"]),
+
+        Ingredient("Carrot (cooked)", "Veg", 35, 0.8, 0.2, 8,
+                   "Beta-carotene.",
+                   ["Antioxidant support", "Low calorie nutrient boost", "Good texture variety"],
+                   ["Chop/soften for small dogs"]),
+
+        Ingredient("Broccoli (cooked)", "Veg", 34, 2.8, 0.4, 7,
+                   "Vitamin C, K.",
+                   ["Antioxidant-rich", "Good rotation vegetable", "Adds micronutrient diversity"],
+                   ["Large amounts may cause gas"]),
+
+        Ingredient("Zucchini (cooked)", "Veg", 17, 1.2, 0.3, 3.1,
+                   "Hydration-friendly veggie.",
+                   ["Very low calorie", "Great for volumizing meals", "Mild taste for picky dogs"],
+                   ["Avoid seasoning"]),
+
+        Ingredient("Green Beans (cooked)", "Veg", 31, 1.8, 0.1, 7,
+                   "Fiber and low-calorie bulk.",
+                   ["Helpful for weight management", "Gentle fiber", "Good texture variety"],
+                   []),
+
+        Ingredient("Sweet Peas (cooked)", "Veg", 84, 5.4, 0.4, 15.6,
+                   "Plant protein + fiber.",
+                   ["Adds variety", "Good for active dogs in small portions"],
+                   ["Moderate starch; control for weight plans"]),
+
+        Ingredient("Cauliflower (cooked)", "Veg", 25, 1.9, 0.3, 5,
+                   "Low-cal cruciferous veggie.",
+                   ["Adds volume", "Rotation-friendly micronutrients"],
+                   ["May cause gas in some dogs"]),
+
+        Ingredient("Cabbage (cooked, small portions)", "Veg", 23, 1.3, 0.1, 5.5,
+                   "Fiber, vitamin C.",
+                   ["Budget-friendly fiber", "Adds variety"],
+                   ["May cause gas; start small"]),
+
+        Ingredient("Kale (cooked, small portions)", "Veg", 35, 2.9, 1.5, 4.4,
+                   "Dense micronutrient profile.",
+                   ["Adds antioxidant variety", "Good in small rotation amounts"],
+                   ["Use small portions; some dogs are sensitive"]),
+
+        Ingredient("Cucumber (peeled, small portions)", "Veg", 15, 0.7, 0.1, 3.6,
+                   "Hydrating low-cal veggie.",
+                   ["Cooling treat-like veggie", "Weight-friendly"],
+                   ["Chop small for tiny breeds"]),
+
+        Ingredient("Bell Pepper (red, cooked)", "Veg", 31, 1, 0.3, 6,
+                   "Vitamin-rich color veggie.",
+                   ["Antioxidant variety", "Palatability and color diversity"],
+                   ["Avoid spicy varieties/seasoning"]),
+
+        Ingredient("Mushroom (common edible, cooked)", "Veg", 22, 3.1, 0.3, 3.3,
+                   "Umami micro-boost.",
+                   ["Adds flavor complexity", "Small rotation option"],
+                   ["Only dog-safe edible types; avoid wild mushrooms"]),
+
+        Ingredient("Spinach (cooked, small portions)", "Veg", 23, 2.9, 0.4, 3.6,
+                   "Folate, magnesium.",
+                   ["Adds micronutrient variety", "Antioxidant support"],
+                   ["Use small portions due to oxalates"]),
 
         # --- Carbs ---
-        Ingredient(
-            name="Sweet Potato (cooked)",
-            category="Carb",
-            kcal_per_100g=86, protein_g=1.6, fat_g=0.1, carbs_g=20,
-            micronote="Beta-carotene, potassium.",
-            benefits=["Energy source with micronutrients",
-                      "Often very palatable",
-                      "Good for active dogs in controlled portions"],
-            cautions=["Portion for weight control"]
-        ),
-        Ingredient(
-            name="Brown Rice (cooked)",
-            category="Carb",
-            kcal_per_100g=123, protein_g=2.7, fat_g=1.0, carbs_g=25.6,
-            micronote="B vitamins, gentle starch.",
-            benefits=["Easy-to-digest base carb",
-                      "Good for transition diets",
-                      "Neutral flavor"],
-            cautions=["Lower carb if diabetic/overweight plan"]
-        ),
-        Ingredient(
-            name="Oats (cooked)",
-            category="Carb",
-            kcal_per_100g=71, protein_g=2.5, fat_g=1.4, carbs_g=12,
-            micronote="Soluble fiber (beta-glucans).",
-            benefits=["Supports satiety",
-                      "Gentle energy source",
-                      "Useful in cold-season calorie boosts"],
-            cautions=["Introduce slowly for sensitive stomachs"]
-        ),
-        Ingredient(
-            name="Quinoa (cooked)",
-            category="Carb",
-            kcal_per_100g=120, protein_g=4.4, fat_g=1.9, carbs_g=21.3,
-            micronote="Higher protein for a carb.",
-            benefits=["Good option for variety",
-                      "Adds amino acid diversity",
-                      "Often well tolerated"],
-            cautions=["Rinse well before cooking"]
-        ),
+        Ingredient("Sweet Potato (cooked)", "Carb", 86, 1.6, 0.1, 20,
+                   "Beta-carotene, potassium.",
+                   ["Energy source with micronutrients", "Highly palatable", "Good controlled carb"],
+                   ["Portion for weight control"]),
+
+        Ingredient("Brown Rice (cooked)", "Carb", 123, 2.7, 1.0, 25.6,
+                   "Gentle starch base.",
+                   ["Easy-to-digest base", "Neutral flavor", "Good transition carb"],
+                   ["Lower carb for diabetic/overweight plans"]),
+
+        Ingredient("White Rice (cooked)", "Carb", 130, 2.4, 0.3, 28.2,
+                   "Very gentle GI carb.",
+                   ["Helpful for sensitive stomach phases", "Very bland and digestible"],
+                   ["Lower micronutrients than brown rice"]),
+
+        Ingredient("Oats (cooked)", "Carb", 71, 2.5, 1.4, 12,
+                   "Soluble fiber (beta-glucans).",
+                   ["Supports satiety", "Gentle energy source", "Useful for gut-friendly plans"],
+                   ["Introduce slowly for sensitive stomachs"]),
+
+        Ingredient("Quinoa (cooked)", "Carb", 120, 4.4, 1.9, 21.3,
+                   "Higher protein for a carb.",
+                   ["Good option for variety", "Amino acid diversity", "Often well tolerated"],
+                   ["Rinse well before cooking"]),
+
+        Ingredient("Barley (cooked)", "Carb", 123, 2.3, 0.4, 28,
+                   "Fiber-rich grain.",
+                   ["Satiety-friendly carb", "Good rotation starch"],
+                   ["Introduce gradually"]),
+
+        Ingredient("Buckwheat (cooked)", "Carb", 92, 3.4, 0.6, 19.9,
+                   "Alternative pseudo-grain.",
+                   ["Variety option", "Often gentle"],
+                   ["Cook thoroughly"]),
+
+        Ingredient("Potato (cooked, plain)", "Carb", 87, 2, 0.1, 20,
+                   "Simple starch.",
+                   ["Palatable, easy carb", "Useful in limited-ingredient plans"],
+                   ["Never feed raw potato; avoid green parts"]),
 
         # --- Oils ---
-        Ingredient(
-            name="Fish Oil (supplemental)",
-            category="Oil",
-            kcal_per_100g=900, protein_g=0, fat_g=100, carbs_g=0,
-            micronote="EPA/DHA omega-3s.",
-            benefits=["Skin/coat support",
-                      "Anti-inflammatory support",
-                      "May benefit cognitive and joint health"],
-            cautions=["Dose carefully; can loosen stool",
-                      "Check with vet if on blood thinners"]
-        ),
-        Ingredient(
-            name="Olive Oil (small amounts)",
-            category="Oil",
-            kcal_per_100g=884, protein_g=0, fat_g=100, carbs_g=0,
-            micronote="Monounsaturated fats.",
-            benefits=["Palatability booster",
-                      "Helps calorie density for thin dogs"],
-            cautions=["Too much fat may trigger GI upset"]
-        ),
+        Ingredient("Fish Oil (supplemental)", "Oil", 900, 0, 100, 0,
+                   "EPA/DHA omega-3s.",
+                   ["Skin/coat support", "Anti-inflammatory support", "May benefit cognitive/joint support"],
+                   ["Dose carefully; can loosen stool", "Check with vet if on blood thinners"]),
+
+        Ingredient("Olive Oil (small amounts)", "Oil", 884, 0, 100, 0,
+                   "Monounsaturated fats.",
+                   ["Palatability booster", "Helps calorie density for thin dogs"],
+                   ["Too much fat may trigger GI upset"]),
+
+        Ingredient("MCT Oil (very small amounts)", "Oil", 900, 0, 100, 0,
+                   "Medium-chain triglycerides.",
+                   ["May help some senior cognition plans (vet-guided)"],
+                   ["Can cause diarrhea; use cautiously"]),
+
+        Ingredient("Flaxseed Oil (small amounts)", "Oil", 884, 0, 100, 0,
+                   "ALA omega-3 (plant-based).",
+                   ["Alternative fatty acid source", "Rotation fat option"],
+                   ["ALA conversion to EPA/DHA is limited"]),
+
+        # --- Treat-like Add-ons (optional category) ---
+        Ingredient("Blueberries (lightly mashed)", "Treat", 57, 0.7, 0.3, 14.5,
+                   "Antioxidant fruit option.",
+                   ["Small antioxidant topper", "Palatability boost"],
+                   ["Use small portions to avoid excess sugar"]),
+
+        Ingredient("Apple (peeled, no seeds)", "Treat", 52, 0.3, 0.2, 14,
+                   "Hydrating sweet crunch.",
+                   ["Low-cal treat topper", "Adds variety"],
+                   ["Remove seeds/core; use small portions"]),
     ]
+
     return {i.name: i for i in items}
 
 
@@ -344,55 +334,162 @@ INGREDIENTS = build_ingredients()
 
 
 # =========================
-# Breed & Life Stage Helpers
+# Expanded Breed List
+# (Broad global coverage, includes many common + regional breeds)
 # =========================
 
 BREED_LIST = [
-    # toy/small
-    "Chihuahua", "Pomeranian", "Yorkshire Terrier", "Maltese", "Toy Poodle",
-    "Shih Tzu", "Dachshund (Mini)", "Papillon",
-    # medium
-    "Beagle", "French Bulldog", "Cocker Spaniel", "Border Collie", "Shetland Sheepdog",
-    "Shiba Inu", "Schnauzer (Standard)", "Bulldog",
-    # large/giant
-    "Labrador Retriever", "Golden Retriever", "German Shepherd", "Siberian Husky",
-    "Boxer", "Doberman", "Great Dane", "Bernese Mountain Dog",
-    # mixed
+    # --- Toy ---
+    "Affenpinscher", "Brussels Griffon", "Cavalier King Charles Spaniel",
+    "Chihuahua", "Chinese Crested", "English Toy Spaniel", "Italian Greyhound",
+    "Japanese Chin", "Maltese", "Miniature Pinscher", "Papillon",
+    "Pekingese", "Pomeranian", "Pug", "Russian Toy", "Shih Tzu",
+    "Toy Fox Terrier", "Toy Poodle", "Yorkshire Terrier",
+
+    # --- Small ---
+    "Bichon Frise", "Boston Terrier", "Cairn Terrier", "Cardigan Welsh Corgi",
+    "Pembroke Welsh Corgi", "Cotton de Tulear", "Dachshund (Mini)",
+    "Dachshund (Standard)", "Fox Terrier (Smooth)", "Fox Terrier (Wire)",
+    "Havanese", "Jack Russell Terrier", "Lhasa Apso", "Miniature Schnauzer",
+    "Norfolk Terrier", "Norwich Terrier", "Parson Russell Terrier",
+    "Patterdale Terrier", "Scottish Terrier", "Sealyham Terrier",
+    "Shetland Sheepdog", "West Highland White Terrier", "Whippet",
+
+    # --- Medium ---
+    "American Cocker Spaniel", "Australian Shepherd", "Basenji", "Beagle",
+    "Border Collie", "Border Terrier", "Brittany",
+    "Bulldog", "Bull Terrier", "Chinese Shar-Pei",
+    "Cocker Spaniel (English)", "Dalmatian", "Finnish Spitz",
+    "French Bulldog", "Icelandic Sheepdog", "Keeshond",
+    "Korean Jindo", "Lagotto Romagnolo", "Miniature American Shepherd",
+    "Samoyed (medium-large)", "Shiba Inu", "Shikoku",
+    "Schnauzer (Standard)", "Soft Coated Wheaten Terrier",
+    "Staffordshire Bull Terrier", "Vizsla",
+
+    # --- Large ---
+    "Airedale Terrier", "Akita", "Alaskan Malamute",
+    "American Bulldog", "Australian Cattle Dog",
+    "Belgian Malinois", "Belgian Tervuren", "Belgian Sheepdog",
+    "Bernese Mountain Dog", "Bloodhound", "Boxer",
+    "Cane Corso", "Chesapeake Bay Retriever",
+    "Collie (Rough)", "Collie (Smooth)",
+    "Doberman", "Dutch Shepherd",
+    "English Springer Spaniel", "Field Spaniel",
+    "German Shepherd", "German Shorthaired Pointer",
+    "Golden Retriever", "Gordon Setter", "Greyhound",
+    "Irish Setter", "Irish Water Spaniel",
+    "Labrador Retriever", "Nova Scotia Duck Tolling Retriever",
+    "Old English Sheepdog", "Pointer",
+    "Rottweiler", "Rhodesian Ridgeback",
+    "Siberian Husky", "Standard Poodle", "Weimaraner",
+
+    # --- Giant ---
+    "Anatolian Shepherd", "Boerboel", "Borzoi",
+    "Bullmastiff", "Dogue de Bordeaux",
+    "Great Dane", "Great Pyrenees",
+    "Irish Wolfhound", "Komondor", "Kuvasz",
+    "Leonberger", "Mastiff", "Neapolitan Mastiff",
+    "Newfoundland", "Saint Bernard", "Tibetan Mastiff",
+
+    # --- Sighthounds & Primitive types ---
+    "Afghan Hound", "Azawakh", "Basenji (primitive)",
+    "Ibizan Hound", "Pharaoh Hound", "Saluki", "Sloughi",
+
+    # --- Spitz & Northern ---
+    "American Eskimo Dog", "Eurasier", "Finnish Lapphund",
+    "Karelian Bear Dog", "Norwegian Elkhound",
+    "Norwegian Buhund", "Norrbottenspets",
+    "Swedish Vallhund", "Yakutian Laika",
+
+    # --- Asian & regional ---
+    "Chow Chow", "Chinese Chongqing Dog",
+    "Thai Ridgeback", "Taiwan Dog",
+    "Kishu Ken", "Kai Ken", "Hokkaido",
+    "Tosa", "Tibetan Spaniel", "Tibetan Terrier",
+
+    # --- Water & hunting ---
+    "Barbet", "Curly-Coated Retriever", "Flat-Coated Retriever",
+    "Irish Terrier", "Portuguese Water Dog",
+    "Spinone Italiano", "Wirehaired Pointing Griffon",
+    "German Wirehaired Pointer",
+
+    # --- Herding (additional) ---
+    "Australian Kelpie", "Bearded Collie",
+    "Briard", "Catahoula Leopard Dog",
+    "Entlebucher Mountain Dog",
+    "Greater Swiss Mountain Dog",
+    "Pyrenean Shepherd",
+
+    # --- Terriers (additional) ---
+    "American Staffordshire Terrier",
+    "Bedlington Terrier", "Dandie Dinmont Terrier",
+    "Kerry Blue Terrier", "Lakeland Terrier",
+    "Manchester Terrier", "Mini Bull Terrier",
+    "Rat Terrier",
+
+    # --- Rare / emerging global recognition ---
+    "Caucasian Shepherd Dog", "Central Asian Shepherd Dog",
+    "Czechoslovakian Wolfdog", "Saarloos Wolfdog",
+    "Xoloitzcuintli", "Peruvian Inca Orchid",
+
+    # --- Catch-all ---
     "Mixed Breed / Unknown",
 ]
 
-BREED_SIZE_MAP = {
-    # toy/small
-    "Chihuahua": "Toy/Small",
-    "Pomeranian": "Toy/Small",
-    "Yorkshire Terrier": "Toy/Small",
-    "Maltese": "Toy/Small",
-    "Toy Poodle": "Toy/Small",
-    "Shih Tzu": "Toy/Small",
-    "Dachshund (Mini)": "Toy/Small",
-    "Papillon": "Toy/Small",
-    # medium
-    "Beagle": "Medium",
-    "French Bulldog": "Medium",
-    "Cocker Spaniel": "Medium",
-    "Border Collie": "Medium",
-    "Shetland Sheepdog": "Medium",
-    "Shiba Inu": "Medium",
-    "Schnauzer (Standard)": "Medium",
-    "Bulldog": "Medium",
-    # large/giant
-    "Labrador Retriever": "Large/Giant",
-    "Golden Retriever": "Large/Giant",
-    "German Shepherd": "Large/Giant",
-    "Siberian Husky": "Large/Giant",
-    "Boxer": "Large/Giant",
-    "Doberman": "Large/Giant",
-    "Great Dane": "Large/Giant",
-    "Bernese Mountain Dog": "Large/Giant",
-    # mixed default
-    "Mixed Breed / Unknown": "Unknown",
-}
+# Rough size map (expanded but intentionally coarse)
+BREED_SIZE_MAP = {b: "Unknown" for b in BREED_LIST}
+for b in [
+    "Chihuahua", "Pomeranian", "Yorkshire Terrier", "Maltese", "Toy Poodle",
+    "Shih Tzu", "Papillon", "Japanese Chin", "Pekingese", "Russian Toy",
+    "Affenpinscher", "Brussels Griffon", "Chinese Crested", "Pug",
+    "Miniature Pinscher", "Toy Fox Terrier", "Italian Greyhound",
+    "English Toy Spaniel", "Cavalier King Charles Spaniel"
+]:
+    BREED_SIZE_MAP[b] = "Toy/Small"
 
+for b in [
+    "Bichon Frise", "Boston Terrier", "Cairn Terrier",
+    "Dachshund (Mini)", "Dachshund (Standard)",
+    "Jack Russell Terrier", "Lhasa Apso", "Miniature Schnauzer",
+    "Norfolk Terrier", "Norwich Terrier",
+    "West Highland White Terrier", "Scottish Terrier", "Whippet",
+    "Pembroke Welsh Corgi", "Cardigan Welsh Corgi",
+    "Havanese", "Coton de Tulear"
+]:
+    BREED_SIZE_MAP[b] = "Toy/Small"
+
+for b in [
+    "Beagle", "French Bulldog", "Bulldog",
+    "Border Collie", "Australian Shepherd",
+    "Shiba Inu", "Korean Jindo", "Schnauzer (Standard)",
+    "Staffordshire Bull Terrier", "Soft Coated Wheaten Terrier",
+    "Vizsla", "Dalmatian", "Keeshond", "Brittany"
+]:
+    BREED_SIZE_MAP[b] = "Medium"
+
+for b in [
+    "Labrador Retriever", "Golden Retriever", "German Shepherd",
+    "Siberian Husky", "Doberman", "Rottweiler",
+    "Boxer", "Weimaraner", "Pointer", "Old English Sheepdog",
+    "Chesapeake Bay Retriever", "Belgian Malinois",
+    "Rhodesian Ridgeback", "Collie (Rough)", "Collie (Smooth)",
+    "Standard Poodle"
+]:
+    BREED_SIZE_MAP[b] = "Large/Giant"
+
+for b in [
+    "Great Dane", "Mastiff", "Neapolitan Mastiff", "Saint Bernard",
+    "Newfoundland", "Leonberger", "Great Pyrenees",
+    "Bernese Mountain Dog", "Tibetan Mastiff",
+    "Caucasian Shepherd Dog", "Central Asian Shepherd Dog",
+    "Irish Wolfhound"
+]:
+    BREED_SIZE_MAP[b] = "Large/Giant"
+
+
+# =========================
+# Life stage & energy helpers
+# =========================
 
 def age_to_life_stage(age_years: float) -> str:
     if age_years < 1:
@@ -403,17 +500,13 @@ def age_to_life_stage(age_years: float) -> str:
 
 
 def calc_rer(weight_kg: float) -> float:
-    # Resting Energy Requirement
-    # widely used equation in veterinary nutrition
     return 70 * (weight_kg ** 0.75)
 
 
 def mer_factor(life_stage: str, activity: str, neutered: bool) -> float:
-    # Conservative and adjustable multipliers.
     base = 1.6 if neutered else 1.8
 
     if life_stage == "Puppy":
-        # Puppies vary widely; we provide a safer lower band.
         base = 2.2 if neutered else 2.4
     elif life_stage == "Senior":
         base = 1.3 if neutered else 1.4
@@ -429,45 +522,27 @@ def mer_factor(life_stage: str, activity: str, neutered: bool) -> float:
 
 
 # =========================
-# Ratio Presets (Cooked Fresh)
+# Ratio Presets
 # =========================
 
 RATIO_PRESETS = [
-    RatioPreset(
-        key="balanced",
-        label="Balanced Cooked Fresh (default)",
-        meat_pct=50, veg_pct=35, carb_pct=15,
-        note="A practical cooked-fresh ratio emphasizing lean protein and diverse vegetables."
-    ),
-    RatioPreset(
-        key="weight",
-        label="Weight-Aware & Satiety",
-        meat_pct=45, veg_pct=45, carb_pct=10,
-        note="Higher vegetable volume and slightly reduced energy density."
-    ),
-    RatioPreset(
-        key="active",
-        label="Active Adult Energy",
-        meat_pct=55, veg_pct=25, carb_pct=20,
-        note="More energy support for high activity while keeping vegetables present."
-    ),
-    RatioPreset(
-        key="senior",
-        label="Senior Gentle Balance",
-        meat_pct=48, veg_pct=40, carb_pct=12,
-        note="Fiber and micronutrient focus, moderate carbs."
-    ),
-    RatioPreset(
-        key="puppy",
-        label="Puppy Growth (cooked baseline)",
-        meat_pct=55, veg_pct=30, carb_pct=15,
-        note="Growth needs are complex; ensure calcium/vitamin balance with veterinary guidance."
-    ),
+    RatioPreset("balanced", "Balanced Cooked Fresh (default)", 50, 35, 15,
+                "A practical cooked-fresh ratio emphasizing lean protein and diverse vegetables."),
+    RatioPreset("weight", "Weight-Aware & Satiety", 45, 45, 10,
+                "Higher vegetable volume and slightly reduced energy density."),
+    RatioPreset("active", "Active Adult Energy", 55, 25, 20,
+                "More energy support for high activity while keeping vegetables present."),
+    RatioPreset("senior", "Senior Gentle Balance", 48, 40, 12,
+                "Fiber and micronutrient focus, moderate carbs."),
+    RatioPreset("puppy", "Puppy Growth (cooked baseline)", 55, 30, 15,
+                "Growth needs are complex; ensure calcium/vitamin balance with veterinary guidance."),
+    RatioPreset("gentle_gi", "Gentle GI Rotation", 50, 40, 10,
+                "A calmer profile leaning on easy proteins + soothing fiber veggies."),
 ]
 
 
 # =========================
-# Supplement Guidance
+# Expanded Supplement Guidance
 # =========================
 
 SUPPLEMENTS = [
@@ -475,36 +550,78 @@ SUPPLEMENTS = [
         "name": "Omega-3 (Fish Oil)",
         "why": "Supports skin/coat, joint comfort, and inflammatory balance.",
         "best_for": ["Dry/itchy skin", "Senior dogs", "Joint support plans"],
-        "cautions": "Dose carefully; excessive fat may loosen stool. Check with vet if on medications affecting clotting.",
+        "cautions": "Dose carefully; may loosen stool. Check with vet if on medications affecting clotting.",
         "pairing": "Pairs well with lean proteins and antioxidant-rich vegetables."
     },
     {
         "name": "Probiotics",
         "why": "May improve gut resilience and stool stability.",
         "best_for": ["Sensitive stomach", "Diet transitions", "Stress-related GI changes"],
-        "cautions": "Choose veterinary-formulated options when possible.",
+        "cautions": "Choose canine-specific or veterinary-formulated options.",
         "pairing": "Works nicely with pumpkin, oats, and gentle proteins."
+    },
+    {
+        "name": "Prebiotic Fiber (e.g., inulin, MOS)",
+        "why": "Feeds beneficial gut bacteria and may support stool quality.",
+        "best_for": ["Soft stools", "Post-antibiotic recovery (vet guided)"],
+        "cautions": "Too much can cause gas.",
+        "pairing": "Combine with probiotics for a gentle synbiotic approach."
     },
     {
         "name": "Calcium Support (for home-cooked)",
         "why": "Home-cooked diets often need calcium balancing.",
-        "best_for": ["Puppies", "Dogs on long-term cooked fresh diets"],
-        "cautions": "Over- or under-supplementation can be risky—confirm strategy with a vet nutritionist.",
-        "pairing": "Especially crucial if not feeding balanced commercial formulations."
+        "best_for": ["Puppies", "Long-term cooked fresh routines"],
+        "cautions": "Over/under supplementation can be risky—confirm with a vet nutritionist.",
+        "pairing": "Essential when not using balanced commercial bases."
     },
     {
-        "name": "Multivitamin (Canine)",
+        "name": "Canine Multivitamin",
         "why": "Helps cover micronutrient gaps in simplified home recipes.",
-        "best_for": ["Long-term home cooking", "Limited ingredient variety"],
+        "best_for": ["Limited ingredient variety", "Long-term home cooking"],
         "cautions": "Avoid human multivitamins unless a vet approves.",
-        "pairing": "Use with rotation-based weekly menus."
+        "pairing": "Best used with rotation-based weekly menus."
     },
     {
         "name": "Joint Support (Glucosamine/Chondroitin/UC-II)",
         "why": "May support mobility and cartilage health.",
         "best_for": ["Large breeds", "Senior dogs", "Highly active dogs"],
-        "cautions": "Effects vary; benefits are often gradual.",
-        "pairing": "Pairs with omega-3 and controlled body weight plans."
+        "cautions": "Effects vary and usually take time.",
+        "pairing": "Pairs with omega-3 and weight control."
+    },
+    {
+        "name": "Vitamin E (as guided)",
+        "why": "Antioxidant support, often paired with higher fat/omega supplementation.",
+        "best_for": ["Dogs receiving omega-3 long-term"],
+        "cautions": "Avoid excessive dosing without guidance.",
+        "pairing": "Consider when fish oil is used regularly."
+    },
+    {
+        "name": "Zinc Support (vet-guided)",
+        "why": "May support skin barrier and coat quality.",
+        "best_for": ["Specific deficiency concerns", "Some dermatology plans"],
+        "cautions": "Too much can be harmful; use only with professional guidance.",
+        "pairing": "Works alongside balanced protein variety."
+    },
+    {
+        "name": "Dental Additives (enzymatic or vet-approved)",
+        "why": "Helps reduce plaque in dogs that resist brushing.",
+        "best_for": ["Small breeds prone to dental issues"],
+        "cautions": "Not a replacement for brushing.",
+        "pairing": "Pairs with crunchy safe veggie textures when appropriate."
+    },
+    {
+        "name": "L-Carnitine (vet-guided)",
+        "why": "May assist certain weight management or cardiac support strategies.",
+        "best_for": ["Vet-supervised weight plans"],
+        "cautions": "Use under professional advice.",
+        "pairing": "Best with lean proteins and higher vegetable ratios."
+    },
+    {
+        "name": "Urinary Support (condition-specific)",
+        "why": "Some dogs need tailored mineral/pH strategies.",
+        "best_for": ["Vet-diagnosed urinary issues"],
+        "cautions": "Dietary mineral balancing is medical—vet required.",
+        "pairing": "Consider hydration-rich meal design."
     },
 ]
 
@@ -548,23 +665,20 @@ def compute_daily_energy(
     factor = mer_factor(stage, activity, neutered)
     mer = rer * factor
 
-    # Conservative adjustments for special conditions
-    # (These are gentle multipliers, not medical prescriptions.)
     adj = 1.0
     rationale = []
 
     if "Overweight / Weight loss goal" in special_flags:
         adj *= 0.85
         rationale.append("Reduced target for weight loss.")
-    if "Very picky eater" in special_flags:
-        # doesn't change calories, but we mention in notes
-        rationale.append("Consider palatability strategies.")
     if "Pancreatitis risk / Needs lower fat" in special_flags:
         adj *= 0.95
-        rationale.append("Slightly conservative energy target.")
+        rationale.append("Conservative energy target for fat-sensitive context.")
     if "Kidney concern (vet-managed)" in special_flags:
         adj *= 0.95
-        rationale.append("Energy target kept conservative; protein strategy should be vet-guided.")
+        rationale.append("Energy kept conservative; protein strategy must be vet-guided.")
+    if "Very picky eater" in special_flags:
+        rationale.append("Use palatability tactics (warm, rotate, gentle oils).")
 
     mer_adj = mer * adj
     explanation = stage
@@ -574,32 +688,21 @@ def compute_daily_energy(
     return rer, mer, mer_adj, explanation
 
 
-def default_ratio_for_context(preset_key: str) -> Tuple[int, int, int]:
-    preset = next((p for p in RATIO_PRESETS if p.key == preset_key), RATIO_PRESETS[0])
-    return preset.meat_pct, preset.veg_pct, preset.carb_pct
-
-
 def ensure_ratio_sum(meat_pct: int, veg_pct: int, carb_pct: int) -> Tuple[int, int, int]:
     total = meat_pct + veg_pct + carb_pct
     if total == 100:
         return meat_pct, veg_pct, carb_pct
-    # Normalize gracefully
     meat = round(meat_pct / total * 100)
     veg = round(veg_pct / total * 100)
     carb = 100 - meat - veg
     carb = max(0, carb)
-    # small correction if rounding goes weird
     if meat + veg + carb != 100:
         diff = 100 - (meat + veg + carb)
         meat = max(0, meat + diff)
     return meat, veg, carb
 
 
-def estimate_food_grams_from_energy(
-    daily_kcal: float,
-    assumed_kcal_per_g: float
-) -> float:
-    # Many cooked fresh mixes land roughly around 1.1–1.6 kcal/g depending on fat/carb.
+def estimate_food_grams_from_energy(daily_kcal: float, assumed_kcal_per_g: float) -> float:
     return daily_kcal / assumed_kcal_per_g
 
 
@@ -622,16 +725,14 @@ def pick_rotation(
     all_carbs = filter_ingredients_by_category("Carb")
 
     plan = []
-    # Create gentle rotation: avoid same meat in consecutive days if possible
     last_meat = None
-    for d in range(days):
+    for _ in range(days):
         meat_pool = pantry_meats if pantry_meats else all_meats
         veg_pool = pantry_vegs if pantry_vegs else all_vegs
         carb_pool = pantry_carbs if pantry_carbs else all_carbs
 
         meat = safe_choice(meat_pool, all_meats)
         if len(meat_pool) > 1 and meat == last_meat:
-            # try one re-roll
             meat = safe_choice([m for m in meat_pool if m != last_meat], all_meats)
 
         veg = safe_choice(veg_pool, all_vegs)
@@ -643,12 +744,7 @@ def pick_rotation(
     return plan
 
 
-def grams_for_day(
-    total_grams: float,
-    meat_pct: int,
-    veg_pct: int,
-    carb_pct: int
-) -> Tuple[float, float, float]:
+def grams_for_day(total_grams: float, meat_pct: int, veg_pct: int, carb_pct: int) -> Tuple[float, float, float]:
     meat_g = total_grams * meat_pct / 100
     veg_g = total_grams * veg_pct / 100
     carb_g = total_grams * carb_pct / 100
@@ -683,17 +779,17 @@ def day_nutrition_estimate(meat: str, veg: str, carb: str, meat_g: float, veg_g:
 # =========================
 
 if "taste_log" not in st.session_state:
-    st.session_state.taste_log = []  # list of dict entries
+    st.session_state.taste_log = []
 
 
 # =========================
 # Sidebar - Dog Profile
 # =========================
 
-st.sidebar.markdown(f"## 🐾 {APP_TITLE}")
-st.sidebar.caption("Cosmic-grade fresh feeding intelligence")
+st.sidebar.markdown(f"## 🐶🍳 {APP_TITLE}")
+st.sidebar.caption("Cosmic-grade cooked fresh meal intelligence")
 
-breed = st.sidebar.selectbox("Breed", BREED_LIST, index=len(BREED_LIST)-1)
+breed = st.sidebar.selectbox("Breed", BREED_LIST, index=BREED_LIST.index("Mixed Breed / Unknown"))
 
 col_a, col_b = st.sidebar.columns(2)
 with col_a:
@@ -729,7 +825,7 @@ if "None" in special_flags and len(special_flags) > 1:
 assumed_kcal_per_g = st.sidebar.slider(
     "Assumed energy density (kcal per gram of cooked mix)",
     min_value=1.0, max_value=1.8, value=1.35, step=0.05,
-    help="Cooked fresh mixes vary widely. This helps convert calories into total daily grams."
+    help="Cooked fresh mixes vary widely. This converts calories into approximate daily grams."
 )
 
 st.sidebar.markdown("---")
@@ -743,7 +839,7 @@ st.sidebar.caption("Educational tool; not a substitute for veterinary nutrition 
 st.markdown(
     f"""
     <div class="nebula-card">
-      <h1>🌌 {APP_TITLE}</h1>
+      <h1>🐶🍲 {APP_TITLE}</h1>
       <p style="font-size: 1.05rem; opacity: 0.9;">
         {APP_SUBTITLE} <span class="badge">Cooked Fresh Focus</span>
       </p>
@@ -759,12 +855,38 @@ st.markdown(
 
 
 # =========================
-# Tabs (App Sections)
+# Optional imagery (tasteful)
+# =========================
+
+with st.expander("🖼️ Nebula Visual Mode (optional)", expanded=False):
+    st.write("Lightweight decorative images to enhance theme. Safe to ignore if your deployment blocks external images.")
+    show_images = st.toggle("Enable decorative images", value=False)
+    if show_images:
+        col_i1, col_i2, col_i3 = st.columns(3)
+        with col_i1:
+            st.image(
+                "https://images.unsplash.com/photo-1517849845537-4d257902454a?q=80&w=1200&auto=format&fit=crop",
+                caption="Companion energy"
+            )
+        with col_i2:
+            st.image(
+                "https://images.unsplash.com/photo-1542984335-6e7d2a1b5d6b?q=80&w=1200&auto=format&fit=crop",
+                caption="Fresh prep vibes"
+            )
+        with col_i3:
+            st.image(
+                "https://images.unsplash.com/photo-1511689660979-10d2b1aada49?q=80&w=1200&auto=format&fit=crop",
+                caption="Ingredient constellation"
+            )
+
+
+# =========================
+# Tabs
 # =========================
 
 tab_home, tab_ingredients, tab_ratio, tab_planner, tab_supp, tab_feedback = st.tabs(
     [
-        "🚀 Command Deck",
+        "🐶🍳 Command Deck",
         "🥩🥦 Ingredient Cosmos",
         "⚖️ Ratio Lab",
         "📅 7-Day Intelligent Plan",
@@ -808,11 +930,11 @@ with tab_home:
             <div class="nebula-card">
               <h4>🧭 Your navigation paths</h4>
               <ul>
-                <li><b>Ingredient Cosmos</b> — filter meats/veg/carbs/oils, see benefits and cautions.</li>
+                <li><b>Ingredient Cosmos</b> — filter meats/veg/carbs/oils/treats, see benefits and cautions.</li>
                 <li><b>Ratio Lab</b> — visualize macro energy contributions and compare presets.</li>
                 <li><b>7-Day Intelligent Plan</b> — generate a weekly menu from your pantry with gram targets.</li>
-                <li><b>Supplement Observatory</b> — learn safe, conservative pairing logic for cooked diets.</li>
-                <li><b>Taste & Notes</b> — track preferences so future iterations become more personalized.</li>
+                <li><b>Supplement Observatory</b> — conservative pairing logic for cooked diets.</li>
+                <li><b>Taste & Notes</b> — track preferences to refine your pantry choices.</li>
               </ul>
             </div>
             """,
@@ -827,8 +949,7 @@ with tab_home:
             - Avoid seasoning (salt, onion, garlic, spicy sauces).
             - Ensure proteins are fully cooked and deboned.
             - Long-term home-cooked feeding typically needs **calcium + micronutrient balancing**.
-            - If your dog has a medical condition (kidney disease, pancreatitis, diabetes),
-              treat this as a **discussion starter** with a vet or board-certified nutritionist.
+            - Medical conditions require a vet or veterinary nutritionist plan.
             """
         )
 
@@ -844,7 +965,7 @@ with tab_ingredients:
 
     col_f1, col_f2, col_f3 = st.columns([1.2, 1.2, 2])
     with col_f1:
-        cat_filter = st.selectbox("Category filter", ["All", "Meat", "Veg", "Carb", "Oil"])
+        cat_filter = st.selectbox("Category filter", ["All", "Meat", "Veg", "Carb", "Oil", "Treat"])
     with col_f2:
         sort_key = st.selectbox("Sort by", ["Category", "Ingredient", "kcal/100g", "Protein(g)", "Fat(g)", "Carbs(g)"])
     with col_f3:
@@ -870,13 +991,11 @@ with tab_ingredients:
     show_chart = st.toggle("Show interactive nutrition chart", value=True)
     if show_chart and not df_view.empty:
         chart_df = df_view[["Ingredient", "Category", "kcal/100g", "Protein(g)", "Fat(g)", "Carbs(g)"]].copy()
-
         metric = st.radio(
             "Metric",
             ["kcal/100g", "Protein(g)", "Fat(g)", "Carbs(g)"],
             horizontal=True
         )
-
         chart = (
             alt.Chart(chart_df)
             .mark_bar()
@@ -959,7 +1078,6 @@ with tab_ratio:
         special_flags=special_flags
     )
     daily_grams = estimate_food_grams_from_energy(mer_adj, assumed_kcal_per_g)
-
     meat_g, veg_g, carb_g = grams_for_day(daily_grams, meat_pct, veg_pct, carb_pct)
 
     st.markdown("### Daily gram target (based on your energy assumptions)")
@@ -970,8 +1088,6 @@ with tab_ratio:
     g4.metric("Carb target (g)", f"{carb_g:.0f}")
 
     st.markdown("### Macro energy lens (conceptual)")
-
-    # Create a conceptual macro estimate using representative category averages
     cat_means = ingredient_df().groupby("Category")[["kcal/100g", "Protein(g)", "Fat(g)", "Carbs(g)"]].mean()
 
     def est_cat_kcal(cat: str, grams: float) -> float:
@@ -979,14 +1095,10 @@ with tab_ratio:
             return 0.0
         return float(cat_means.loc[cat, "kcal/100g"]) * grams / 100.0
 
-    est_meat_kcal = est_cat_kcal("Meat", meat_g)
-    est_veg_kcal = est_cat_kcal("Veg", veg_g)
-    est_carb_kcal = est_cat_kcal("Carb", carb_g)
-
     ratio_kcal_df = pd.DataFrame([
-        {"Component": "Meat (avg)", "kcal": est_meat_kcal},
-        {"Component": "Veg (avg)", "kcal": est_veg_kcal},
-        {"Component": "Carb (avg)", "kcal": est_carb_kcal},
+        {"Component": "Meat (avg)", "kcal": est_cat_kcal("Meat", meat_g)},
+        {"Component": "Veg (avg)", "kcal": est_cat_kcal("Veg", veg_g)},
+        {"Component": "Carb (avg)", "kcal": est_cat_kcal("Carb", carb_g)},
     ])
 
     chart = (
@@ -1005,8 +1117,7 @@ with tab_ratio:
         st.write(
             """
             - This is a **conceptual lens** based on category averages.
-            - Real energy will shift with specific cuts (fat content) and chosen carbs.
-            - For dogs needing strict medical diets, consult a professional for precise formulation.
+            - Real energy shifts with fat level, specific carb choices, and additions like oils.
             """
         )
 
@@ -1129,11 +1240,11 @@ with tab_planner:
                 """
             )
 
-        with st.expander("Why rotation matters (science-lite)"):
+        with st.expander("Why rotation matters"):
             st.write(
                 """
-                Rotation helps reduce over-reliance on a single protein or plant,
-                improves micronutrient diversity, and can make meals more engaging for dogs.
+                Rotation helps reduce over-reliance on one protein/plant,
+                improves micronutrient diversity, and keeps meals interesting.
                 """
             )
 
@@ -1147,7 +1258,8 @@ with tab_supp:
 
     st.markdown(
         """
-        Supplements can help fill gaps in simplified cooked diets, but the best choice depends on your dog's health.
+        Supplements can help fill gaps in simplified cooked diets,
+        but the best strategy depends on your dog's health.
         This section provides **non-prescriptive** educational guidance.
         """
     )
@@ -1156,35 +1268,46 @@ with tab_supp:
     st.dataframe(
         supp_df[["name", "why", "cautions", "pairing"]],
         use_container_width=True,
-        height=260
+        height=280
     )
 
     st.markdown("### Personalized supplement lens")
     focus = st.multiselect(
         "What do you want to prioritize?",
-        ["Skin/Coat", "Gut", "Joint/Mobility", "Puppy Growth Support", "Senior Vitality", "Weight Management"],
+        ["Skin/Coat", "Gut", "Joint/Mobility", "Puppy Growth Support",
+         "Senior Vitality", "Weight Management", "Dental Support", "Urinary Focus"],
         default=[]
     )
 
+    def add_if(lst, item):
+        if item not in lst:
+            lst.append(item)
+
     suggestions = []
     if "Skin/Coat" in focus:
-        suggestions.append("Omega-3 (Fish Oil)")
+        add_if(suggestions, "Omega-3 (Fish Oil)")
+        add_if(suggestions, "Vitamin E (as guided)")
+        add_if(suggestions, "Zinc Support (vet-guided)")
     if "Gut" in focus:
-        suggestions.append("Probiotics")
+        add_if(suggestions, "Probiotics")
+        add_if(suggestions, "Prebiotic Fiber (e.g., inulin, MOS)")
     if "Joint/Mobility" in focus:
-        suggestions.append("Joint Support (Glucosamine/Chondroitin/UC-II)")
-        suggestions.append("Omega-3 (Fish Oil)")
+        add_if(suggestions, "Joint Support (Glucosamine/Chondroitin/UC-II)")
+        add_if(suggestions, "Omega-3 (Fish Oil)")
     if "Puppy Growth Support" in focus:
-        suggestions.append("Calcium Support (for home-cooked)")
-        suggestions.append("Multivitamin (Canine)")
+        add_if(suggestions, "Calcium Support (for home-cooked)")
+        add_if(suggestions, "Canine Multivitamin")
     if "Senior Vitality" in focus:
-        suggestions.append("Omega-3 (Fish Oil)")
-        suggestions.append("Joint Support (Glucosamine/Chondroitin/UC-II)")
-        suggestions.append("Probiotics")
+        add_if(suggestions, "Omega-3 (Fish Oil)")
+        add_if(suggestions, "Joint Support (Glucosamine/Chondroitin/UC-II)")
+        add_if(suggestions, "Probiotics")
     if "Weight Management" in focus:
-        suggestions.append("Probiotics")
-
-    suggestions = list(dict.fromkeys(suggestions))  # dedupe preserve order
+        add_if(suggestions, "Probiotics")
+        add_if(suggestions, "L-Carnitine (vet-guided)")
+    if "Dental Support" in focus:
+        add_if(suggestions, "Dental Additives (enzymatic or vet-approved)")
+    if "Urinary Focus" in focus:
+        add_if(suggestions, "Urinary Support (condition-specific)")
 
     if suggestions:
         st.markdown(
@@ -1223,7 +1346,7 @@ with tab_feedback:
 
     col_t1, col_t2, col_t3 = st.columns(3)
     with col_t1:
-        log_meat = st.selectbox("Observed meat", ["(skip)"] + filter_ingredients_by_category("Meat"))
+        log_meat = st.selectbox("Observed protein", ["(skip)"] + filter_ingredients_by_category("Meat"))
     with col_t2:
         log_veg = st.selectbox("Observed vegetable", ["(skip)"] + filter_ingredients_by_category("Veg"))
     with col_t3:
@@ -1240,7 +1363,7 @@ with tab_feedback:
             "Breed": breed,
             "Age (y)": round(age_years, 2),
             "Weight (kg)": round(weight_kg, 2),
-            "Meat": None if log_meat == "(skip)" else log_meat,
+            "Protein": None if log_meat == "(skip)" else log_meat,
             "Veg": None if log_veg == "(skip)" else log_veg,
             "Preference": love_level,
             "Notes": notes.strip(),
@@ -1256,43 +1379,42 @@ with tab_feedback:
 
         st.markdown("### Preference summary")
 
-        # Build simple counts for meats and vegs
         def pref_score(p: str) -> int:
             return {"Dislike": 0, "Neutral": 1, "Like": 2, "Love": 3}.get(p, 1)
 
-        meat_records = log_df.dropna(subset=["Meat"]).copy()
+        protein_records = log_df.dropna(subset=["Protein"]).copy()
         veg_records = log_df.dropna(subset=["Veg"]).copy()
 
         col_s1, col_s2 = st.columns(2)
 
         with col_s1:
-            if not meat_records.empty:
-                meat_records["Score"] = meat_records["Preference"].map(pref_score)
-                meat_rank = meat_records.groupby("Meat")["Score"].mean().sort_values(ascending=False).reset_index()
-                meat_rank.columns = ["Meat", "Avg Preference Score"]
+            if not protein_records.empty:
+                protein_records["Score"] = protein_records["Preference"].map(pref_score)
+                rank = protein_records.groupby("Protein")["Score"].mean().sort_values(ascending=False).reset_index()
+                rank.columns = ["Protein", "Avg Preference Score"]
 
                 bar = (
-                    alt.Chart(meat_rank)
+                    alt.Chart(rank)
                     .mark_bar()
                     .encode(
                         x=alt.X("Avg Preference Score:Q", scale=alt.Scale(domain=[0, 3])),
-                        y=alt.Y("Meat:N", sort="-x"),
-                        tooltip=["Meat", alt.Tooltip("Avg Preference Score:Q", format=".2f")]
+                        y=alt.Y("Protein:N", sort="-x"),
+                        tooltip=["Protein", alt.Tooltip("Avg Preference Score:Q", format=".2f")]
                     )
-                    .properties(height=240, title="Meat preference (session)")
+                    .properties(height=240, title="Protein preference (session)")
                 )
                 st.altair_chart(bar, use_container_width=True)
             else:
-                st.caption("No meat preference entries yet.")
+                st.caption("No protein preference entries yet.")
 
         with col_s2:
             if not veg_records.empty:
                 veg_records["Score"] = veg_records["Preference"].map(pref_score)
-                veg_rank = veg_records.groupby("Veg")["Score"].mean().sort_values(ascending=False).reset_index()
-                veg_rank.columns = ["Vegetable", "Avg Preference Score"]
+                rank = veg_records.groupby("Veg")["Score"].mean().sort_values(ascending=False).reset_index()
+                rank.columns = ["Vegetable", "Avg Preference Score"]
 
                 bar = (
-                    alt.Chart(veg_rank)
+                    alt.Chart(rank)
                     .mark_bar()
                     .encode(
                         x=alt.X("Avg Preference Score:Q", scale=alt.Scale(domain=[0, 3])),
@@ -1308,9 +1430,9 @@ with tab_feedback:
         with st.expander("How to use this data"):
             st.write(
                 """
-                - If your dog consistently dislikes a protein, swap it out in the pantry list.
-                - If a vegetable correlates with softer stool, reduce its share or rotate less frequently.
-                - For allergy suspicion, discuss an elimination strategy with a veterinarian.
+                - If your dog consistently dislikes a protein, remove it from pantry selection.
+                - If a vegetable correlates with softer stool, reduce its share or rotate less often.
+                - For allergy suspicion, consider a vet-guided elimination approach.
                 """
             )
     else:
