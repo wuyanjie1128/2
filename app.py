@@ -1,5 +1,7 @@
 import random
+import re
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Dict, List, Tuple, Optional
 
 import pandas as pd
@@ -108,8 +110,7 @@ class RatioPreset:
 
 
 # =========================
-# Ingredient Knowledge Base (rich)
-# Approximate cooked values.
+# Ingredient Knowledge Base
 # =========================
 
 def build_ingredients() -> Dict[str, Ingredient]:
@@ -324,106 +325,272 @@ INGREDIENTS = build_ingredients()
 
 
 # =========================
-# Expanded Breed List (broad coverage)
+# Breed DB (CSV-first, fallback built-in)
 # =========================
 
-BREED_LIST = [
-    # Toy
-    "Affenpinscher", "Brussels Griffon", "Cavalier King Charles Spaniel",
-    "Chihuahua", "Chinese Crested", "English Toy Spaniel", "Italian Greyhound",
-    "Japanese Chin", "Maltese", "Miniature Pinscher", "Papillon",
-    "Pekingese", "Pomeranian", "Pug", "Russian Toy", "Shih Tzu",
-    "Toy Fox Terrier", "Toy Poodle", "Yorkshire Terrier",
-
-    # Small
-    "Bichon Frise", "Boston Terrier", "Cairn Terrier",
-    "Cardigan Welsh Corgi", "Pembroke Welsh Corgi",
-    "Coton de Tulear", "Dachshund (Mini)", "Dachshund (Standard)",
-    "Havanese", "Jack Russell Terrier", "Lhasa Apso",
-    "Miniature Schnauzer", "Norfolk Terrier", "Norwich Terrier",
-    "Scottish Terrier", "West Highland White Terrier", "Whippet",
-
-    # Medium
-    "American Cocker Spaniel", "Australian Shepherd", "Basenji", "Beagle",
-    "Border Collie", "Brittany", "Bulldog", "Bull Terrier",
-    "Chinese Shar-Pei", "Dalmatian", "French Bulldog",
-    "Keeshond", "Korean Jindo", "Lagotto Romagnolo",
-    "Miniature American Shepherd", "Shiba Inu", "Shikoku",
-    "Schnauzer (Standard)", "Soft Coated Wheaten Terrier",
-    "Staffordshire Bull Terrier", "Vizsla",
-
-    # Large
-    "Airedale Terrier", "Akita", "Alaskan Malamute", "American Bulldog",
-    "Australian Cattle Dog", "Belgian Malinois", "Bernese Mountain Dog",
-    "Bloodhound", "Boxer", "Cane Corso",
-    "Collie (Rough)", "Collie (Smooth)",
-    "Doberman", "German Shepherd", "German Shorthaired Pointer",
-    "Golden Retriever", "Greyhound", "Irish Setter",
-    "Labrador Retriever", "Old English Sheepdog",
-    "Pointer", "Rottweiler", "Rhodesian Ridgeback",
-    "Siberian Husky", "Standard Poodle", "Weimaraner",
-
-    # Giant
-    "Anatolian Shepherd", "Boerboel", "Borzoi", "Bullmastiff",
-    "Dogue de Bordeaux", "Great Dane", "Great Pyrenees",
-    "Irish Wolfhound", "Leonberger", "Mastiff",
-    "Neapolitan Mastiff", "Newfoundland", "Saint Bernard",
-    "Tibetan Mastiff", "Caucasian Shepherd Dog", "Central Asian Shepherd Dog",
-
-    # Primitive/Northern/Regional
-    "American Eskimo Dog", "Chow Chow", "Thai Ridgeback",
-    "Taiwan Dog", "Kishu Ken", "Kai Ken", "Hokkaido", "Tosa",
-    "Xoloitzcuintli", "Peruvian Inca Orchid",
-
-    # Catch-all
-    "Mixed Breed / Unknown",
+FALLBACK_BREEDS = [
+    {"Breed": "Affenpinscher", "FCI_Group": 2, "Region": "Europe", "SizeClass": "Toy", "Notes": "Companion"},
+    {"Breed": "Afghan Hound", "FCI_Group": 10, "Region": "Asia", "SizeClass": "Large", "Notes": "Sighthound"},
+    {"Breed": "Akita", "FCI_Group": 5, "Region": "Asia", "SizeClass": "Large", "Notes": "Spitz"},
+    {"Breed": "Alaskan Malamute", "FCI_Group": 5, "Region": "North America", "SizeClass": "Large", "Notes": "Arctic sled"},
+    {"Breed": "Australian Cattle Dog", "FCI_Group": 1, "Region": "Oceania", "SizeClass": "Medium", "Notes": "Herding"},
+    {"Breed": "Australian Shepherd", "FCI_Group": 1, "Region": "Oceania", "SizeClass": "Medium", "Notes": "Herding"},
+    {"Breed": "Basenji", "FCI_Group": 5, "Region": "Africa", "SizeClass": "Small", "Notes": "Primitive"},
+    {"Breed": "Basset Hound", "FCI_Group": 6, "Region": "Europe", "SizeClass": "Medium", "Notes": "Scenthound"},
+    {"Breed": "Beagle", "FCI_Group": 6, "Region": "Europe", "SizeClass": "Medium", "Notes": "Scenthound"},
+    {"Breed": "Belgian Malinois", "FCI_Group": 1, "Region": "Europe", "SizeClass": "Large", "Notes": "Working herder"},
+    {"Breed": "Bernese Mountain Dog", "FCI_Group": 2, "Region": "Europe", "SizeClass": "Large", "Notes": "Mountain draft"},
+    {"Breed": "Bichon Frise", "FCI_Group": 9, "Region": "Europe", "SizeClass": "Small", "Notes": "Companion"},
+    {"Breed": "Bloodhound", "FCI_Group": 6, "Region": "Europe", "SizeClass": "Large", "Notes": "Scenthound"},
+    {"Breed": "Border Collie", "FCI_Group": 1, "Region": "Europe", "SizeClass": "Medium", "Notes": "High drive"},
+    {"Breed": "Borzoi", "FCI_Group": 10, "Region": "Europe", "SizeClass": "Large", "Notes": "Sighthound"},
+    {"Breed": "Boston Terrier", "FCI_Group": 9, "Region": "North America", "SizeClass": "Small", "Notes": "Companion"},
+    {"Breed": "Boxer", "FCI_Group": 2, "Region": "Europe", "SizeClass": "Large", "Notes": "Working"},
+    {"Breed": "Brussels Griffon", "FCI_Group": 9, "Region": "Europe", "SizeClass": "Toy", "Notes": "Companion"},
+    {"Breed": "Bulldog", "FCI_Group": 2, "Region": "Europe", "SizeClass": "Medium", "Notes": "Companion"},
+    {"Breed": "Bullmastiff", "FCI_Group": 2, "Region": "Europe", "SizeClass": "Giant", "Notes": "Guardian"},
+    {"Breed": "Cane Corso", "FCI_Group": 2, "Region": "Europe", "SizeClass": "Large", "Notes": "Guardian"},
+    {"Breed": "Cavalier King Charles Spaniel", "FCI_Group": 9, "Region": "Europe", "SizeClass": "Toy", "Notes": "Companion"},
+    {"Breed": "Chihuahua", "FCI_Group": 9, "Region": "North America", "SizeClass": "Toy", "Notes": "Companion"},
+    {"Breed": "Chow Chow", "FCI_Group": 5, "Region": "Asia", "SizeClass": "Medium", "Notes": "Spitz"},
+    {"Breed": "Dachshund (Miniature)", "FCI_Group": 4, "Region": "Europe", "SizeClass": "Small", "Notes": "Scent/terrier mix"},
+    {"Breed": "Dachshund (Standard)", "FCI_Group": 4, "Region": "Europe", "SizeClass": "Small", "Notes": "Scent/terrier mix"},
+    {"Breed": "Dalmatian", "FCI_Group": 6, "Region": "Europe", "SizeClass": "Large", "Notes": "Carriage dog"},
+    {"Breed": "Doberman Pinscher", "FCI_Group": 2, "Region": "Europe", "SizeClass": "Large", "Notes": "Guardian"},
+    {"Breed": "French Bulldog", "FCI_Group": 9, "Region": "Europe", "SizeClass": "Small", "Notes": "Companion"},
+    {"Breed": "German Shepherd Dog", "FCI_Group": 1, "Region": "Europe", "SizeClass": "Large", "Notes": "Working herder"},
+    {"Breed": "Golden Retriever", "FCI_Group": 8, "Region": "Europe", "SizeClass": "Large", "Notes": "Retrieving"},
+    {"Breed": "Great Dane", "FCI_Group": 2, "Region": "Europe", "SizeClass": "Giant", "Notes": "Gentle giant"},
+    {"Breed": "Great Pyrenees", "FCI_Group": 2, "Region": "Europe", "SizeClass": "Giant", "Notes": "Guardian"},
+    {"Breed": "Greyhound", "FCI_Group": 10, "Region": "Europe", "SizeClass": "Large", "Notes": "Sighthound"},
+    {"Breed": "Italian Greyhound", "FCI_Group": 10, "Region": "Europe", "SizeClass": "Toy", "Notes": "Sighthound"},
+    {"Breed": "Korean Jindo", "FCI_Group": 5, "Region": "Asia", "SizeClass": "Medium", "Notes": "Primitive hunting"},
+    {"Breed": "Labrador Retriever", "FCI_Group": 8, "Region": "Europe", "SizeClass": "Large", "Notes": "Retrieving"},
+    {"Breed": "Maltese", "FCI_Group": 9, "Region": "Europe", "SizeClass": "Toy", "Notes": "Companion"},
+    {"Breed": "Mastiff", "FCI_Group": 2, "Region": "Europe", "SizeClass": "Giant", "Notes": "Guardian"},
+    {"Breed": "Miniature Schnauzer", "FCI_Group": 2, "Region": "Europe", "SizeClass": "Small", "Notes": "Companion/ratting"},
+    {"Breed": "Newfoundland", "FCI_Group": 2, "Region": "Europe", "SizeClass": "Giant", "Notes": "Water rescue"},
+    {"Breed": "Papillon", "FCI_Group": 9, "Region": "Europe", "SizeClass": "Toy", "Notes": "Companion"},
+    {"Breed": "Pekingese", "FCI_Group": 9, "Region": "Asia", "SizeClass": "Toy", "Notes": "Companion"},
+    {"Breed": "Pomeranian", "FCI_Group": 5, "Region": "Europe", "SizeClass": "Toy", "Notes": "Spitz companion"},
+    {"Breed": "Pug", "FCI_Group": 9, "Region": "Asia", "SizeClass": "Toy", "Notes": "Companion"},
+    {"Breed": "Rottweiler", "FCI_Group": 2, "Region": "Europe", "SizeClass": "Large", "Notes": "Guardian"},
+    {"Breed": "Saint Bernard", "FCI_Group": 2, "Region": "Europe", "SizeClass": "Giant", "Notes": "Mountain rescue"},
+    {"Breed": "Samoyed", "FCI_Group": 5, "Region": "Europe", "SizeClass": "Large", "Notes": "Spitz"},
+    {"Breed": "Shiba Inu", "FCI_Group": 5, "Region": "Asia", "SizeClass": "Small", "Notes": "Primitive"},
+    {"Breed": "Shih Tzu", "FCI_Group": 9, "Region": "Asia", "SizeClass": "Toy", "Notes": "Companion"},
+    {"Breed": "Siberian Husky", "FCI_Group": 5, "Region": "Asia", "SizeClass": "Large", "Notes": "Sled"},
+    {"Breed": "Toy Poodle", "FCI_Group": 9, "Region": "Europe", "SizeClass": "Toy", "Notes": "Companion"},
+    {"Breed": "Standard Poodle", "FCI_Group": 9, "Region": "Europe", "SizeClass": "Large", "Notes": "Water/companion"},
+    {"Breed": "Vizsla", "FCI_Group": 7, "Region": "Europe", "SizeClass": "Large", "Notes": "Gundog"},
+    {"Breed": "Whippet", "FCI_Group": 10, "Region": "Europe", "SizeClass": "Medium", "Notes": "Sighthound"},
+    {"Breed": "Yorkshire Terrier", "FCI_Group": 3, "Region": "Europe", "SizeClass": "Toy", "Notes": "Companion"},
+    {"Breed": "Mixed Breed / Unknown", "FCI_Group": 0, "Region": "Global", "SizeClass": "Varies", "Notes": "General selection"},
 ]
 
-BREED_SIZE_MAP = {b: "Unknown" for b in BREED_LIST}
-for b in [
-    "Chihuahua", "Pomeranian", "Yorkshire Terrier", "Maltese", "Toy Poodle",
-    "Shih Tzu", "Papillon", "Japanese Chin", "Pekingese", "Russian Toy",
-    "Affenpinscher", "Brussels Griffon", "Chinese Crested", "Pug",
-    "Miniature Pinscher", "Toy Fox Terrier", "Italian Greyhound",
-    "English Toy Spaniel", "Cavalier King Charles Spaniel",
-    "Bichon Frise", "Boston Terrier", "Cairn Terrier",
-    "Dachshund (Mini)", "Havanese", "Lhasa Apso",
-    "Miniature Schnauzer", "Norfolk Terrier", "Norwich Terrier",
-    "Scottish Terrier", "West Highland White Terrier",
-]:
-    BREED_SIZE_MAP[b] = "Toy/Small"
 
-for b in [
-    "Beagle", "French Bulldog", "Bulldog",
-    "Border Collie", "Australian Shepherd",
-    "Shiba Inu", "Korean Jindo", "Schnauzer (Standard)",
-    "Staffordshire Bull Terrier", "Soft Coated Wheaten Terrier",
-    "Vizsla", "Dalmatian", "Keeshond",
-    "Cardigan Welsh Corgi", "Pembroke Welsh Corgi",
-]:
-    BREED_SIZE_MAP[b] = "Medium"
+@st.cache_data
+def load_breed_db() -> pd.DataFrame:
+    path = Path("data/breeds.csv")
+    if path.exists():
+        df = pd.read_csv(path)
+    else:
+        df = pd.DataFrame(FALLBACK_BREEDS)
 
-for b in [
-    "Labrador Retriever", "Golden Retriever", "German Shepherd",
-    "Siberian Husky", "Doberman", "Rottweiler",
-    "Boxer", "Weimaraner", "Pointer",
-    "Akita", "Alaskan Malamute", "Cane Corso",
-    "Bernese Mountain Dog", "Standard Poodle",
-]:
-    BREED_SIZE_MAP[b] = "Large/Giant"
+    for col in ["Breed", "FCI_Group", "Region", "SizeClass", "Notes"]:
+        if col not in df.columns:
+            df[col] = ""
 
-for b in [
-    "Great Dane", "Mastiff", "Neapolitan Mastiff", "Saint Bernard",
-    "Newfoundland", "Leonberger", "Great Pyrenees",
-    "Tibetan Mastiff", "Caucasian Shepherd Dog", "Central Asian Shepherd Dog",
-    "Irish Wolfhound"
-]:
-    BREED_SIZE_MAP[b] = "Large/Giant"
+    df["Breed"] = df["Breed"].astype(str)
+    df["FCI_Group"] = df["FCI_Group"].fillna(0)
+    df["Region"] = df["Region"].fillna("Unknown")
+    df["SizeClass"] = df["SizeClass"].fillna("Unknown")
+    df["Notes"] = df["Notes"].fillna("")
+    df = df.drop_duplicates(subset=["Breed"]).sort_values("Breed").reset_index(drop=True)
+    return df
+
+
+BREED_DB = load_breed_db()
+
+
+def breed_size_map(df: pd.DataFrame) -> Dict[str, str]:
+    return {str(r["Breed"]): str(r.get("SizeClass", "Unknown")) for _, r in df.iterrows()}
+
+
+BREED_SIZE_MAP = breed_size_map(BREED_DB)
+
+
+def filtered_breeds(df: pd.DataFrame, search: str, group: str, region: str, size_c: str) -> List[str]:
+    out = df.copy()
+    if group != "All":
+        out = out[out["FCI_Group"].astype(str) == str(group)]
+    if region != "All":
+        out = out[out["Region"].astype(str) == str(region)]
+    if size_c != "All":
+        out = out[out["SizeClass"].astype(str) == str(size_c)]
+    if search.strip():
+        out = out[out["Breed"].str.contains(search.strip(), case=False, na=False)]
+    breeds = out["Breed"].tolist()
+    if "Mixed Breed / Unknown" not in breeds:
+        breeds.append("Mixed Breed / Unknown")
+    return sorted(set(breeds))
 
 
 # =========================
-# Life stage & energy helpers
+# Ingredient Image System (REAL, stable)
+# Priority:
+# 1) Local assets/ingredients/<slug>.(jpg/png/webp)
+# 2) data/ingredient_images.csv exact mapping
+# 3) None (show text fallback)
 # =========================
+
+def slugify(name: str) -> str:
+    s = name.lower()
+    s = re.sub(r"\([^)]*\)", "", s)  # remove parentheses
+    s = s.replace("&", "and")
+    s = re.sub(r"[^a-z0-9]+", "-", s)
+    s = re.sub(r"-+", "-", s).strip("-")
+    return s
+
+
+@st.cache_data
+def load_ingredient_image_map() -> Dict[str, str]:
+    path = Path("data/ingredient_images.csv")
+    if not path.exists():
+        return {}
+    df = pd.read_csv(path)
+    if "Ingredient" not in df.columns or "ImageURL" not in df.columns:
+        return {}
+    m = {}
+    for _, r in df.iterrows():
+        ing = str(r["Ingredient"]).strip()
+        url = str(r["ImageURL"]).strip()
+        if ing and url:
+            m[ing] = url
+    return m
+
+
+IMAGE_MAP = load_ingredient_image_map()
+
+
+def local_image_path_for(ingredient_name: str) -> Optional[str]:
+    slug = slugify(ingredient_name)
+    base = Path("assets") / "ingredients"
+    for ext in [".jpg", ".png", ".webp", ".jpeg"]:
+        p = base / f"{slug}{ext}"
+        if p.exists():
+            return str(p)
+    return None
+
+
+def ingredient_image_source(ingredient_name: str) -> Optional[str]:
+    local = local_image_path_for(ingredient_name)
+    if local:
+        return local
+    url = IMAGE_MAP.get(ingredient_name)
+    if url:
+        return url
+    return None
+
+
+# =========================
+# Ratio Presets
+# =========================
+
+RATIO_PRESETS = [
+    RatioPreset("balanced", "Balanced Cooked Fresh (default)", 50, 35, 15,
+                "A practical cooked-fresh ratio emphasizing lean protein and diverse vegetables."),
+    RatioPreset("weight", "Weight-Aware & Satiety", 45, 45, 10,
+                "Higher vegetable volume and slightly reduced energy density."),
+    RatioPreset("active", "Active Adult Energy", 55, 25, 20,
+                "More energy support for high activity while keeping vegetables present."),
+    RatioPreset("senior", "Senior Gentle Balance", 48, 40, 12,
+                "Fiber and micronutrient focus, moderate carbs."),
+    RatioPreset("puppy", "Puppy Growth (cooked baseline)", 55, 30, 15,
+                "Growth needs are complex; ensure calcium/vitamin balance with veterinary guidance."),
+    RatioPreset("gentle_gi", "Gentle GI Rotation", 50, 40, 10,
+                "A calmer profile leaning on easy proteins and soothing fiber veggies."),
+]
+
+
+# =========================
+# Supplements
+# =========================
+
+SUPPLEMENTS = [
+    {"name": "Omega-3 (Fish Oil)",
+     "why": "Supports skin/coat, joint comfort, and inflammatory balance.",
+     "best_for": ["Dry/itchy skin", "Senior dogs", "Joint support plans"],
+     "cautions": "Dose carefully; may loosen stool. Check with vet if on clotting-related meds.",
+     "pairing": "Pairs well with lean proteins and antioxidant-rich vegetables."},
+    {"name": "Probiotics",
+     "why": "May improve gut resilience and stool stability.",
+     "best_for": ["Sensitive stomach", "Diet transitions", "Stress-related GI changes"],
+     "cautions": "Choose canine-specific options.",
+     "pairing": "Works nicely with pumpkin, oats, and gentle proteins."},
+    {"name": "Prebiotic Fiber (e.g., inulin, MOS)",
+     "why": "Supports beneficial gut bacteria and stool quality.",
+     "best_for": ["Soft stools", "Gut resilience goals"],
+     "cautions": "Too much can cause gas.",
+     "pairing": "Often paired with probiotics."},
+    {"name": "Calcium Support (for home-cooked)",
+     "why": "Home-cooked diets commonly need calcium balancing.",
+     "best_for": ["Puppies", "Long-term cooked routines"],
+     "cautions": "Over/under supplementation can be risky—vet nutritionist advised.",
+     "pairing": "Essential when meals are fully home-prepared."},
+    {"name": "Canine Multivitamin",
+     "why": "Helps cover micronutrient gaps in simplified recipes.",
+     "best_for": ["Limited ingredient variety", "Long-term home cooking"],
+     "cautions": "Avoid human multivitamins unless approved.",
+     "pairing": "Best with weekly rotation."},
+    {"name": "Joint Support (Glucosamine/Chondroitin/UC-II)",
+     "why": "May support mobility and cartilage health.",
+     "best_for": ["Large breeds", "Senior dogs", "Highly active dogs"],
+     "cautions": "Effects vary and take time.",
+     "pairing": "Pairs with omega-3 and weight control."},
+    {"name": "Vitamin E (as guided)",
+     "why": "Antioxidant support often used alongside omega-3.",
+     "best_for": ["Dogs on long-term fish oil"],
+     "cautions": "Avoid excessive dosing.",
+     "pairing": "Consider with fatty acid protocols."},
+    {"name": "Dental Additives (vet-approved)",
+     "why": "Helps reduce plaque when brushing is difficult.",
+     "best_for": ["Small breeds", "Dental-prone dogs"],
+     "cautions": "Not a substitute for brushing.",
+     "pairing": "Pair with safe chewing strategies."},
+    {"name": "L-Carnitine (vet-guided)",
+     "why": "May assist some weight or cardiac strategies.",
+     "best_for": ["Vet-supervised weight plans"],
+     "cautions": "Use under professional advice.",
+     "pairing": "Best with lean protein + veggie-heavy ratios."},
+]
+
+
+# =========================
+# Utilities
+# =========================
+
+def ingredient_df() -> pd.DataFrame:
+    rows = []
+    for ing in INGREDIENTS.values():
+        rows.append({
+            "Ingredient": ing.name,
+            "Category": ing.category,
+            "kcal/100g": ing.kcal_per_100g,
+            "Protein(g)": ing.protein_g,
+            "Fat(g)": ing.fat_g,
+            "Carbs(g)": ing.carbs_g,
+            "Micro-note": ing.micronote,
+            "Benefits": " • ".join(ing.benefits),
+            "Cautions": " • ".join(ing.cautions) if ing.cautions else "",
+        })
+    df = pd.DataFrame(rows)
+    return df.sort_values(["Category", "Ingredient"]).reset_index(drop=True)
+
+
+def filter_ingredients_by_category(cat: str) -> List[str]:
+    return [i.name for i in INGREDIENTS.values() if i.category == cat]
+
 
 def age_to_life_stage(age_years: float) -> str:
     if age_years < 1:
@@ -452,113 +619,6 @@ def mer_factor(life_stage: str, activity: str, neutered: bool) -> float:
     }.get(activity, 1.0)
 
     return base * activity_boost
-
-
-# =========================
-# Ratio Presets
-# =========================
-
-RATIO_PRESETS = [
-    RatioPreset("balanced", "Balanced Cooked Fresh (default)", 50, 35, 15,
-                "A practical cooked-fresh ratio emphasizing lean protein and diverse vegetables."),
-    RatioPreset("weight", "Weight-Aware & Satiety", 45, 45, 10,
-                "Higher vegetable volume and slightly reduced energy density."),
-    RatioPreset("active", "Active Adult Energy", 55, 25, 20,
-                "More energy support for high activity while keeping vegetables present."),
-    RatioPreset("senior", "Senior Gentle Balance", 48, 40, 12,
-                "Fiber and micronutrient focus, moderate carbs."),
-    RatioPreset("puppy", "Puppy Growth (cooked baseline)", 55, 30, 15,
-                "Growth needs are complex; ensure calcium/vitamin balance with veterinary guidance."),
-    RatioPreset("gentle_gi", "Gentle GI Rotation", 50, 40, 10,
-                "A calmer profile leaning on easy proteins and soothing fiber veggies."),
-]
-
-
-# =========================
-# Supplements (expanded)
-# =========================
-
-SUPPLEMENTS = [
-    {"name": "Omega-3 (Fish Oil)",
-     "why": "Supports skin/coat, joint comfort, and inflammatory balance.",
-     "best_for": ["Dry/itchy skin", "Senior dogs", "Joint support plans"],
-     "cautions": "Dose carefully; may loosen stool. Check with vet if on clotting-related meds.",
-     "pairing": "Pairs well with lean proteins and antioxidant-rich vegetables."},
-
-    {"name": "Probiotics",
-     "why": "May improve gut resilience and stool stability.",
-     "best_for": ["Sensitive stomach", "Diet transitions", "Stress-related GI changes"],
-     "cautions": "Choose canine-specific options.",
-     "pairing": "Works nicely with pumpkin, oats, and gentle proteins."},
-
-    {"name": "Prebiotic Fiber (e.g., inulin, MOS)",
-     "why": "Supports beneficial gut bacteria and stool quality.",
-     "best_for": ["Soft stools", "Gut resilience goals"],
-     "cautions": "Too much can cause gas.",
-     "pairing": "Often paired with probiotics."},
-
-    {"name": "Calcium Support (for home-cooked)",
-     "why": "Home-cooked diets commonly need calcium balancing.",
-     "best_for": ["Puppies", "Long-term cooked routines"],
-     "cautions": "Over/under supplementation can be risky—vet nutritionist advised.",
-     "pairing": "Essential when meals are fully home-prepared."},
-
-    {"name": "Canine Multivitamin",
-     "why": "Helps cover micronutrient gaps in simplified recipes.",
-     "best_for": ["Limited ingredient variety", "Long-term home cooking"],
-     "cautions": "Avoid human multivitamins unless approved.",
-     "pairing": "Best with weekly rotation."},
-
-    {"name": "Joint Support (Glucosamine/Chondroitin/UC-II)",
-     "why": "May support mobility and cartilage health.",
-     "best_for": ["Large breeds", "Senior dogs", "Highly active dogs"],
-     "cautions": "Effects vary and take time.",
-     "pairing": "Pairs with omega-3 and weight control."},
-
-    {"name": "Vitamin E (as guided)",
-     "why": "Antioxidant support often used alongside omega-3.",
-     "best_for": ["Dogs on long-term fish oil"],
-     "cautions": "Avoid excessive dosing.",
-     "pairing": "Consider with fatty acid protocols."},
-
-    {"name": "Dental Additives (vet-approved)",
-     "why": "Helps reduce plaque when brushing is difficult.",
-     "best_for": ["Small breeds", "Dental-prone dogs"],
-     "cautions": "Not a substitute for brushing.",
-     "pairing": "Pair with safe chewing strategies."},
-
-    {"name": "L-Carnitine (vet-guided)",
-     "why": "May assist some weight or cardiac strategies.",
-     "best_for": ["Vet-supervised weight plans"],
-     "cautions": "Use under professional advice.",
-     "pairing": "Best with lean protein + veggie-heavy ratios."},
-]
-
-
-# =========================
-# Core data utilities
-# =========================
-
-def ingredient_df() -> pd.DataFrame:
-    rows = []
-    for ing in INGREDIENTS.values():
-        rows.append({
-            "Ingredient": ing.name,
-            "Category": ing.category,
-            "kcal/100g": ing.kcal_per_100g,
-            "Protein(g)": ing.protein_g,
-            "Fat(g)": ing.fat_g,
-            "Carbs(g)": ing.carbs_g,
-            "Micro-note": ing.micronote,
-            "Benefits": " • ".join(ing.benefits),
-            "Cautions": " • ".join(ing.cautions) if ing.cautions else "",
-        })
-    df = pd.DataFrame(rows)
-    return df.sort_values(["Category", "Ingredient"]).reset_index(drop=True)
-
-
-def filter_ingredients_by_category(cat: str) -> List[str]:
-    return [i.name for i in INGREDIENTS.values() if i.category == cat]
 
 
 def compute_daily_energy(
@@ -639,10 +699,6 @@ def day_nutrition_estimate(meat: str, veg: str, carb: str,
     }
 
 
-# =========================
-# Human-friendly recommender
-# =========================
-
 def recommend_ingredients(stage: str, special_flags: List[str]) -> Dict[str, List[str]]:
     meats, vegs, carbs, treats = [], [], [], []
 
@@ -704,20 +760,10 @@ def recommend_ingredients(stage: str, special_flags: List[str]) -> Dict[str, Lis
 
 
 # =========================
-# Ingredient image helper
+# Multi-dog Session Model
 # =========================
 
-def ingredient_image_url(ingredient_name: str) -> str:
-    q = ingredient_name.split("(")[0].strip().replace("/", " ")
-    q = f"{q} food"
-    return f"https://source.unsplash.com/featured/600x400/?{q}"
-
-
-# =========================
-# Multi-dog session model
-# =========================
-
-def default_dog_profile(dog_id: str, label_index: int = 1) -> Dict:
+def default_dog_profile(dog_id: str) -> Dict:
     return {
         "id": dog_id,
         "name": "",
@@ -734,13 +780,11 @@ def default_dog_profile(dog_id: str, label_index: int = 1) -> Dict:
 
 def dog_display_name(d: Dict, idx: int) -> str:
     nm = (d.get("name") or "").strip()
-    if nm:
-        return nm
-    return f"Dog {idx}"
+    return nm if nm else f"Dog {idx}"
 
 
 if "dogs" not in st.session_state:
-    st.session_state.dogs = [default_dog_profile("dog-1", 1)]
+    st.session_state.dogs = [default_dog_profile("dog-1")]
 
 if "active_dog_id" not in st.session_state:
     st.session_state.active_dog_id = st.session_state.dogs[0]["id"]
@@ -760,14 +804,14 @@ def get_active_dog() -> Dict:
 def update_active_dog(updates: Dict):
     for i, d in enumerate(st.session_state.dogs):
         if d["id"] == st.session_state.active_dog_id:
-            new_d = d.copy()
-            new_d.update(updates)
-            st.session_state.dogs[i] = new_d
+            nd = d.copy()
+            nd.update(updates)
+            st.session_state.dogs[i] = nd
             return
 
 
 # =========================
-# Taste-informed preferences
+# Taste-informed Preferences
 # =========================
 
 def pref_score_from_label(p: str) -> int:
@@ -775,41 +819,28 @@ def pref_score_from_label(p: str) -> int:
 
 
 def get_preference_maps(dog_id: str) -> Tuple[Dict[str, float], Dict[str, float]]:
-    """
-    Returns average preference score per protein and per veg for this dog.
-    """
     entries = [e for e in st.session_state.taste_log if e.get("dog_id") == dog_id]
     if not entries:
         return {}, {}
-
     df = pd.DataFrame(entries)
     if df.empty:
         return {}, {}
-
     df["score"] = df["Preference"].map(pref_score_from_label)
 
-    protein_map = {}
-    veg_map = {}
-
+    meat_map, veg_map = {}, {}
     if "Protein" in df.columns:
         sub = df.dropna(subset=["Protein"])
         if not sub.empty:
-            protein_map = sub.groupby("Protein")["score"].mean().to_dict()
-
+            meat_map = sub.groupby("Protein")["score"].mean().to_dict()
     if "Veg" in df.columns:
         sub = df.dropna(subset=["Veg"])
         if not sub.empty:
             veg_map = sub.groupby("Veg")["score"].mean().to_dict()
 
-    return protein_map, veg_map
+    return meat_map, veg_map
 
 
 def weighted_choice(rng: random.Random, items: List[str], weights: List[float]) -> str:
-    # safe fallback
-    if not items:
-        raise ValueError("weighted_choice received empty items")
-    if len(items) != len(weights):
-        raise ValueError("weighted_choice items/weights length mismatch")
     total = sum(max(0.0, w) for w in weights)
     if total <= 0:
         return rng.choice(items)
@@ -822,10 +853,6 @@ def weighted_choice(rng: random.Random, items: List[str], weights: List[float]) 
             return item
     return items[-1]
 
-
-# =========================
-# Smarter rotation engine (with taste weighting)
-# =========================
 
 def pick_rotation_smart(
     pantry_meats: List[str],
@@ -855,21 +882,17 @@ def pick_rotation_smart(
         carb_pool = pantry_carbs if pantry_carbs else all_carbs
 
     def taste_weight(name: str, m: Dict[str, float]) -> float:
-        # avg score 0..3
         if not use_taste_weights:
             return 1.0
         s = m.get(name)
         if s is None:
             return 1.0
-        # convert to weight: dislike still possible but rare
-        return max(0.25, 0.25 + float(s))
+        return max(0.25, 0.25 + float(s))  # 0..3 -> 0.25..3.25
 
-    def choose_with_anti_boredom(pool: List[str], last: Optional[str], last2: Optional[str],
-                                taste_map: Dict[str, float]) -> str:
-        if not pool:
+    def choose(pool: List[str], last: Optional[str], last2: Optional[str], tmap: Dict[str, float]) -> str:
+        candidates = pool[:] if pool else []
+        if not candidates:
             return rng.choice(all_meats)
-
-        candidates = pool[:]
 
         # avoid 3x repeats
         if last and last2 and last == last2:
@@ -883,7 +906,7 @@ def pick_rotation_smart(
             if filtered:
                 candidates = filtered
 
-        weights = [taste_weight(x, taste_map) for x in candidates]
+        weights = [taste_weight(x, tmap) for x in candidates]
         return weighted_choice(rng, candidates, weights)
 
     plan = []
@@ -891,8 +914,8 @@ def pick_rotation_smart(
     last_veg = last_veg2 = None
 
     for _ in range(days):
-        meat = choose_with_anti_boredom(meat_pool, last_meat, last_meat2, taste_meat_map)
-        veg = choose_with_anti_boredom(veg_pool, last_veg, last_veg2, taste_veg_map) if veg_pool else rng.choice(all_vegs)
+        meat = choose(meat_pool, last_meat, last_meat2, taste_meat_map)
+        veg = choose(veg_pool, last_veg, last_veg2, taste_veg_map) if veg_pool else rng.choice(all_vegs)
         carb = rng.choice(carb_pool) if carb_pool else rng.choice(all_carbs)
 
         plan.append({"Meat": meat, "Veg": veg, "Carb": carb})
@@ -903,14 +926,7 @@ def pick_rotation_smart(
     return plan
 
 
-# =========================
-# Build shopping list
-# =========================
-
 def build_weekly_shopping_list(plan_df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Expects columns: Meat, Veg, Carb, Daily Meat (g), Daily Veg (g), Daily Carb (g)
-    """
     totals = {}
 
     def add_item(name: str, grams: float):
@@ -948,7 +964,7 @@ def build_category_prep_summary(shopping_df: pd.DataFrame) -> pd.DataFrame:
 
 
 # =========================
-# Sidebar - Multi-dog control
+# Sidebar - Multi-dog Control
 # =========================
 
 st.sidebar.markdown(f"## 🐶🍳 {APP_TITLE}")
@@ -963,11 +979,18 @@ active_dog = get_active_dog()
 
 with st.sidebar.expander("➕ Add new dog profile", expanded=False):
     new_name = st.text_input("New dog name", value="", key="new_dog_name")
-    new_breed = st.selectbox("New dog breed", BREED_LIST, index=BREED_LIST.index("Mixed Breed / Unknown"), key="new_dog_breed")
+
+    # simple breed pick for new dog (full list)
+    all_breeds_master = sorted(set(BREED_DB["Breed"].tolist() + ["Mixed Breed / Unknown"]))
+    new_breed = st.selectbox("New dog breed", all_breeds_master,
+                             index=all_breeds_master.index("Mixed Breed / Unknown"), key="new_dog_breed")
+
     new_age = st.number_input("New dog age (years)", 0.1, 25.0, 2.0, 0.1, key="new_dog_age")
     new_weight = st.number_input("New dog weight (kg)", 0.5, 90.0, 8.0, 0.1, key="new_dog_weight")
     new_neut = st.toggle("Neutered/Spayed", True, key="new_dog_neut")
-    new_act = st.select_slider("Activity level", ["Low", "Normal", "High", "Athletic/Working"], value="Normal", key="new_dog_act")
+    new_act = st.select_slider("Activity level", ["Low", "Normal", "High", "Athletic/Working"],
+                               value="Normal", key="new_dog_act")
+
     new_flags = st.multiselect(
         "Special considerations",
         [
@@ -986,12 +1009,13 @@ with st.sidebar.expander("➕ Add new dog profile", expanded=False):
     )
     if "None" in new_flags and len(new_flags) > 1:
         new_flags = [f for f in new_flags if f != "None"]
+
     new_meals = st.select_slider("Meals per day", [1, 2, 3, 4], value=2, key="new_dog_meals")
     new_density = st.slider("Assumed energy density (kcal/g)", 1.0, 1.8, 1.35, 0.05, key="new_dog_density")
 
     if st.button("Create profile", key="create_profile_btn"):
         new_id = f"dog-{len(st.session_state.dogs) + 1}"
-        d = default_dog_profile(new_id, len(st.session_state.dogs) + 1)
+        d = default_dog_profile(new_id)
         d.update({
             "name": new_name.strip(),
             "breed": new_breed,
@@ -1007,12 +1031,43 @@ with st.sidebar.expander("➕ Add new dog profile", expanded=False):
         st.session_state.active_dog_id = new_id
         st.success("New dog profile added!")
 
+
 st.sidebar.markdown("---")
 st.sidebar.markdown("### Edit active profile")
 
+
+# ----- Breed Explorer UI (clean) -----
+with st.sidebar.expander("Breed explorer (search & filters)", expanded=False):
+    breed_search = st.text_input("Search breed", value="", placeholder="Type to search...", key="breed_search_key")
+
+    group_options = ["All"] + sorted({str(x) for x in BREED_DB["FCI_Group"].unique()})
+    region_options = ["All"] + sorted({str(x) for x in BREED_DB["Region"].unique()})
+    size_options = ["All"] + sorted({str(x) for x in BREED_DB["SizeClass"].unique()})
+
+    col_bf1, col_bf2 = st.columns(2)
+    with col_bf1:
+        group_filter = st.selectbox("FCI group", group_options, key="group_filter_key")
+    with col_bf2:
+        size_filter = st.selectbox("Size class", size_options, key="size_filter_key")
+
+    region_filter = st.selectbox("Region", region_options, key="region_filter_key")
+
+    filtered_for_picker = filtered_breeds(BREED_DB, breed_search, group_filter, region_filter, size_filter)
+
+# default filtered list if expander not used
+filtered_for_picker = filtered_for_picker if "filtered_for_picker" in locals() and filtered_for_picker else \
+    sorted(set(BREED_DB["Breed"].tolist() + ["Mixed Breed / Unknown"]))
+
 dog_name = st.sidebar.text_input("Dog name", value=active_dog.get("name", ""))
-breed = st.sidebar.selectbox("Breed", BREED_LIST,
-                            index=BREED_LIST.index(active_dog.get("breed", "Mixed Breed / Unknown")))
+
+breed = st.sidebar.selectbox(
+    "Breed",
+    filtered_for_picker,
+    index=filtered_for_picker.index(active_dog.get("breed", "Mixed Breed / Unknown"))
+    if active_dog.get("breed", "Mixed Breed / Unknown") in filtered_for_picker
+    else filtered_for_picker.index("Mixed Breed / Unknown")
+)
+
 col_a, col_b = st.sidebar.columns(2)
 with col_a:
     age_years = st.sidebar.number_input("Age (years)", 0.1, 25.0, float(active_dog.get("age_years", 3.0)), 0.1)
@@ -1069,7 +1124,6 @@ if st.sidebar.button("Save profile changes"):
     })
     st.sidebar.success("Profile updated!")
 
-
 st.sidebar.markdown("---")
 st.sidebar.caption("Educational tool; not a substitute for veterinary nutrition advice.")
 
@@ -1079,21 +1133,22 @@ st.sidebar.caption("Educational tool; not a substitute for veterinary nutrition 
 # =========================
 
 title_name = dog_name.strip() or "Your dog"
-name_phrase = f"for {title_name}"
+size_class = BREED_SIZE_MAP.get(breed, "Unknown")
 
 st.markdown(
     f"""
     <div class="nebula-card">
       <h1>🐶🍲 {APP_TITLE}</h1>
       <p style="font-size: 1.05rem; opacity: 0.9;">
-        {APP_SUBTITLE} <span class="badge">Cooked Fresh Focus</span>
+        {APP_SUBTITLE}
+        <span class="badge">Cooked Fresh Focus</span>
         <span class="badge">Multi-dog Mode</span>
         <span class="badge">Taste-learning</span>
       </p>
       <div class="nebula-divider"></div>
       <p style="opacity: 0.9;">
-        A high-end, rotation-based cooked fresh planner {name_phrase}. 
-        Build weekly menus, explore ingredient benefits, and let preferences shape the next week.
+        A high-end, rotation-based cooked fresh planner for <b>{title_name}</b>.
+        Breed size class: <b>{size_class}</b>.
       </p>
     </div>
     """,
@@ -1124,9 +1179,7 @@ tab_home, tab_ingredients, tab_ratio, tab_planner, tab_supp, tab_feedback = st.t
 with tab_home:
     st.markdown("### Dog Profile Snapshot")
 
-    size_class = BREED_SIZE_MAP.get(breed, "Unknown")
     stage = age_to_life_stage(age_years)
-
     rer, mer, mer_adj, explanation = compute_daily_energy(
         weight_kg=weight_kg,
         age_years=age_years,
@@ -1144,14 +1197,13 @@ with tab_home:
     st.caption(f"Breed size class: {size_class} · Meals/day: {meals_per_day}")
     st.caption(f"Context note: {explanation}")
 
-    st.markdown("### Safety-first cooking principles")
-    with st.expander("Open safety notes (important)"):
+    with st.expander("Safety notes (important)"):
         st.write(
             """
-            - This tool is designed for **cooked fresh meal inspiration**.
+            - Educational cooked fresh inspiration.
             - Avoid seasoning (salt, onion, garlic, spicy sauces).
             - Ensure proteins are fully cooked and deboned.
-            - Long-term home-cooked feeding typically needs **calcium + micronutrient balancing**.
+            - Long-term home-cooked feeding usually needs calcium + micronutrient balancing.
             - Medical conditions require a vet or veterinary nutritionist plan.
             """
         )
@@ -1189,8 +1241,8 @@ with tab_ingredients:
     df_view = df_view.sort_values(sort_key).reset_index(drop=True)
     st.dataframe(df_view, use_container_width=True, height=330)
 
-    st.markdown("### Ingredient Photo Wall")
-    st.caption("Theme-friendly visual cues. If your deployment blocks external images, this may appear blank.")
+    st.markdown("### Ingredient Photo Wall (exact-mapped images)")
+    st.caption("Local images are the most reliable. If no local image exists, we use the exact URL mapping file.")
 
     show_photos = st.toggle("Show ingredient photos", value=True)
     if show_photos:
@@ -1200,8 +1252,12 @@ with tab_ingredients:
         else:
             cols = st.columns(4)
             for idx, ing_name in enumerate(preview_list):
+                src = ingredient_image_source(ing_name)
                 with cols[idx % 4]:
-                    st.image(ingredient_image_url(ing_name), caption=ing_name, use_container_width=True)
+                    if src:
+                        st.image(src, caption=ing_name, use_container_width=True)
+                    else:
+                        st.warning(f"No mapped image yet for: {ing_name}")
 
     st.markdown("### Deep-dive cards")
     selected_ing = st.selectbox("Pick an ingredient to explore", df["Ingredient"].tolist())
@@ -1209,7 +1265,12 @@ with tab_ingredients:
 
     cimg, cinfo = st.columns([1, 1.6])
     with cimg:
-        st.image(ingredient_image_url(ing_obj.name), use_container_width=True)
+        src = ingredient_image_source(ing_obj.name)
+        if src:
+            st.image(src, use_container_width=True)
+        else:
+            st.info("No exact image mapped yet. Add a local image or update data/ingredient_images.csv.")
+
     with cinfo:
         st.markdown(
             f"""
@@ -1251,7 +1312,6 @@ with tab_ratio:
     preset_obj = next(p for p in RATIO_PRESETS if p.key == preset_key)
 
     st.info(preset_obj.note)
-
     use_custom = st.toggle("Override with custom ratios", value=False)
 
     if not use_custom:
@@ -1264,6 +1324,7 @@ with tab_ratio:
             veg_pct = st.slider("Veg %", 15, 55, preset_obj.veg_pct)
         with c3:
             carb_pct = st.slider("Carb %", 0, 30, preset_obj.carb_pct)
+
         meat_pct, veg_pct, carb_pct = ensure_ratio_sum(meat_pct, veg_pct, carb_pct)
         st.caption(f"Normalized ratio: Meat {meat_pct}% · Veg {veg_pct}% · Carb {carb_pct}%")
 
@@ -1283,7 +1344,6 @@ with tab_ratio:
     g3.metric("Veg target (g)", f"{veg_g:.0f}")
     g4.metric("Carb target (g)", f"{carb_g:.0f}")
 
-    st.markdown("### Macro energy lens (conceptual)")
     cat_means = ingredient_df().groupby("Category")[["kcal/100g"]].mean()
 
     def est_cat_kcal(cat: str, grams: float) -> float:
@@ -1333,17 +1393,13 @@ with tab_planner:
 
     col_mode1, col_mode2, col_mode3, col_mode4 = st.columns([1.1, 1.1, 1.2, 1.6])
     with col_mode1:
-        pantry_only = st.toggle("Pantry-only mode", value=False,
-                                help="Strictly uses selected pantry items (fallback to all if empty).")
+        pantry_only = st.toggle("Pantry-only mode", value=False)
     with col_mode2:
-        allow_new = st.toggle("Smart rotation mode", value=True,
-                              help="Allows new ingredients for variety and boredom prevention.")
+        allow_new = st.toggle("Smart rotation mode", value=True)
     with col_mode3:
-        taste_mode = st.toggle("Taste-informed rotation", value=True,
-                               help="Uses your taste log to bias next week toward favorites.")
+        taste_mode = st.toggle("Taste-informed rotation", value=True)
     with col_mode4:
-        include_fruit_toppers = st.toggle("Allow fruit toppers (small)", value=True,
-                                          help="Adds small optional fruit suggestions.")
+        include_fruit_toppers = st.toggle("Allow fruit toppers (small)", value=True)
 
     stage = age_to_life_stage(age_years)
     recs = recommend_ingredients(stage, special_flags)
@@ -1361,20 +1417,15 @@ with tab_planner:
         st.write("\n".join([f"• {x}" for x in recs["Carb"][:8]]) if recs["Carb"] else "—")
     with rr4:
         st.write("**Fruits (optional small)**")
-        if include_fruit_toppers and recs["Treat"]:
-            st.write("\n".join([f"• {x}" for x in recs["Treat"][:6]]))
-        else:
-            st.write("—")
+        st.write("\n".join([f"• {x}" for x in recs["Treat"][:6]]) if include_fruit_toppers and recs["Treat"] else "—")
 
     st.markdown("### Ratio configuration for the planner")
-
     preset_labels = {p.label: p.key for p in RATIO_PRESETS}
     planner_preset_label = st.selectbox("Planner ratio preset", list(preset_labels.keys()), index=0)
     planner_preset_key = preset_labels[planner_preset_label]
     planner_preset_obj = next(p for p in RATIO_PRESETS if p.key == planner_preset_key)
 
     planner_custom = st.toggle("Fine-tune planner ratio", value=False)
-
     if not planner_custom:
         meat_pct, veg_pct, carb_pct = planner_preset_obj.meat_pct, planner_preset_obj.veg_pct, planner_preset_obj.carb_pct
     else:
@@ -1401,8 +1452,7 @@ with tab_planner:
     )
     st.caption(f"Meals/day: {meals_per_day} → per-meal split will be shown in the plan.")
 
-    seed = st.slider("Rotation randomness seed", 1, 999, 42,
-                     help="Change this to reshuffle the weekly rotation.")
+    seed = st.slider("Rotation randomness seed", 1, 999, 42)
     generate = st.button("✨ Generate 7-Day Nebula Plan")
 
     effective_allow_new = (allow_new and not pantry_only)
@@ -1425,8 +1475,7 @@ with tab_planner:
         fruit_rotation = []
         if include_fruit_toppers and recs["Treat"]:
             rng = random.Random(seed + 7)
-            for _ in range(7):
-                fruit_rotation.append(rng.choice(recs["Treat"]))
+            fruit_rotation = [rng.choice(recs["Treat"]) for _ in range(7)]
         else:
             fruit_rotation = [None] * 7
 
@@ -1484,12 +1533,11 @@ with tab_planner:
         )
         st.altair_chart(line, use_container_width=True)
 
-        # ========== NEW: Shopping list + batch prep ==========
         st.markdown("### 🧾 Weekly shopping list & batch-prep calculator")
 
         shopping_df = build_weekly_shopping_list(plan_df)
         if shopping_df.empty:
-            st.info("Shopping list is empty (unexpected). Try regenerating the plan.")
+            st.info("Shopping list is empty. Try regenerating the plan.")
         else:
             cat_summary = build_category_prep_summary(shopping_df)
 
@@ -1509,35 +1557,12 @@ with tab_planner:
                 mime="text/csv"
             )
 
-            with st.expander("Batch-prep guidance (human-friendly)"):
-                total_week = int(cat_summary["Total grams (7 days)"].sum())
-                st.write(
-                    f"""
-                    - **Estimated total cooked mix for 7 days:** ~{total_week} g  
-                    - You can batch-cook proteins and carbs separately, then steam veggies fresh every 1–2 days.
-                    - If your dog is picky, reserve 1–2 “flex days” to swap in a favorite protein.
-                    """
-                )
-
         with st.expander("How this plan reduces boredom"):
             st.write(
                 """
                 - Anti-boredom rules reduce consecutive repetition of the same meat/veg.
-                - When Smart rotation mode is ON, the planner combines:
-                  your pantry + recommended additions + full library.
-                - Taste-informed rotation softly biases toward what your dog loves.
-                """
-            )
-
-        with st.expander("Cooking & serving protocol"):
-            st.write(
-                """
-                - Cook proteins plainly; remove skin and visible fat if needed.
-                - Steam/boil veggies; chop finely for small breeds.
-                - Cook carbs thoroughly.
-                - Mix, cool, portion.
-                - For long-term fully home-cooked feeding,
-                  consider **canine multivitamin + calcium strategy + omega-3** under professional guidance.
+                - Smart rotation can mix pantry + recommended additions + full library.
+                - Taste-informed rotation biases toward loved items without becoming monotonous.
                 """
             )
 
@@ -1553,7 +1578,7 @@ with tab_supp:
         """
         Supplements can help fill gaps in simplified cooked diets,
         but the best strategy depends on your dog's health.
-        This section provides **non-prescriptive** educational guidance.
+        This section provides non-prescriptive educational guidance.
         """
     )
 
@@ -1621,18 +1646,11 @@ with tab_supp:
 
 
 # =========================
-# 6) Taste & Notes (per-dog)
+# 6) Taste & Notes
 # =========================
 
 with tab_feedback:
     st.markdown(f"### Taste tracking capsule for {title_name}")
-
-    st.write(
-        """
-        Record how your dog responds to different proteins and vegetables.
-        This log stays in your session and helps the next week's planner learn preferences.
-        """
-    )
 
     col_t1, col_t2, col_t3 = st.columns(3)
     with col_t1:
@@ -1663,12 +1681,10 @@ with tab_feedback:
         st.session_state.taste_log.append(entry)
         st.success("Entry added to this dog's session log.")
 
-    # Filter log for active dog
     dog_entries = [e for e in st.session_state.taste_log if e.get("dog_id") == st.session_state.active_dog_id]
 
     if dog_entries:
         log_df = pd.DataFrame(dog_entries)
-
         st.markdown("### This dog's taste log")
         st.dataframe(log_df, use_container_width=True, height=260)
 
@@ -1721,15 +1737,6 @@ with tab_feedback:
                 st.altair_chart(bar, use_container_width=True)
             else:
                 st.caption("No vegetable preference entries yet.")
-
-        with st.expander("How to use this data"):
-            st.write(
-                """
-                - The planner can now bias future weeks toward loved proteins/veggies.
-                - If a food is consistently disliked, remove it from pantry selection.
-                - If you suspect allergies, consider a vet-guided elimination approach.
-                """
-            )
     else:
         st.info("This dog's taste log is empty. Add entries to unlock preference-learning.")
 
