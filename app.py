@@ -74,10 +74,7 @@ thead tr th { background-color: rgba(255,255,255,0.06) !important; }
     border: 1px solid rgba(255,255,255,0.10);
     margin-left: 6px;
 }
-.small-muted {
-    opacity: 0.8;
-    font-size: 0.9rem;
-}
+.small-muted { opacity: 0.8; font-size: 0.9rem; }
 </style>
 """
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
@@ -319,7 +316,6 @@ def build_ingredients() -> Dict[str, Ingredient]:
                    "Vitamin C + flavor variety.",
                    ["Light fruity enrichment"],
                    ["Use small portions"]),
-
     ]
     return {i.name: i for i in items}
 
@@ -623,7 +619,8 @@ def grams_for_day(total_grams: float, meat_pct: int, veg_pct: int, carb_pct: int
     )
 
 
-def day_nutrition_estimate(meat: str, veg: str, carb: str, meat_g: float, veg_g: float, carb_g: float) -> Dict[str, float]:
+def day_nutrition_estimate(meat: str, veg: str, carb: str,
+                           meat_g: float, veg_g: float, carb_g: float) -> Dict[str, float]:
     def calc(name: str, grams: float) -> Dict[str, float]:
         ing = INGREDIENTS[name]
         f = grams / 100.0
@@ -647,16 +644,8 @@ def day_nutrition_estimate(meat: str, veg: str, carb: str, meat_g: float, veg_g:
 # =========================
 
 def recommend_ingredients(stage: str, special_flags: List[str]) -> Dict[str, List[str]]:
-    """
-    Returns recommended lists to enrich variety.
-    This is educational logic, not medical prescription.
-    """
-    meats = []
-    vegs = []
-    carbs = []
-    treats = []
+    meats, vegs, carbs, treats = [], [], [], []
 
-    # base variety suggestions
     base_meats = [
         "Turkey (lean, cooked)", "White Fish (cod, cooked)",
         "Salmon (cooked)", "Egg (cooked)", "Lamb (lean, cooked)"
@@ -678,7 +667,6 @@ def recommend_ingredients(stage: str, special_flags: List[str]) -> Dict[str, Lis
     carbs.extend(base_carbs)
     treats.extend(base_treats)
 
-    # stage adjustments
     if stage == "Puppy":
         meats.extend(["Chicken (lean, cooked)", "Beef (lean, cooked)"])
         carbs.extend(["White Rice (cooked)"])
@@ -687,7 +675,6 @@ def recommend_ingredients(stage: str, special_flags: List[str]) -> Dict[str, Lis
         meats.extend(["White Fish (cod, cooked)", "Salmon (cooked)"])
         vegs.extend(["Pumpkin (cooked)", "Zucchini (cooked)"])
 
-    # special flag adjustments
     if "Sensitive stomach" in special_flags:
         meats.extend(["Turkey (lean, cooked)", "White Fish (cod, cooked)"])
         vegs.extend(["Pumpkin (cooked)"])
@@ -700,32 +687,144 @@ def recommend_ingredients(stage: str, special_flags: List[str]) -> Dict[str, Lis
     if "Overweight / Weight loss goal" in special_flags:
         meats.extend(["Turkey (lean, cooked)", "White Fish (cod, cooked)", "Rabbit (cooked)"])
         vegs.extend(["Green Beans (cooked)", "Zucchini (cooked)", "Cauliflower (cooked)"])
-        carbs = [c for c in carbs if c not in ["Potato (cooked, plain)"]]
 
     if "Pancreatitis risk / Needs lower fat" in special_flags:
         meats = [m for m in meats if m not in ["Salmon (cooked)", "Duck (lean, cooked)", "Sardines (cooked, deboned)"]]
         meats.extend(["Turkey (lean, cooked)", "White Fish (cod, cooked)"])
 
-    # dedupe while preserving order
     def dedupe(lst):
-        seen = set()
-        out = []
+        seen, out = set(), []
         for x in lst:
             if x in INGREDIENTS and x not in seen:
                 out.append(x)
                 seen.add(x)
         return out
 
-    return {
-        "Meat": dedupe(meats),
-        "Veg": dedupe(vegs),
-        "Carb": dedupe(carbs),
-        "Treat": dedupe(treats),
-    }
+    return {"Meat": dedupe(meats), "Veg": dedupe(vegs), "Carb": dedupe(carbs), "Treat": dedupe(treats)}
 
 
 # =========================
-# Smarter rotation engine
+# Ingredient image helper
+# =========================
+
+def ingredient_image_url(ingredient_name: str) -> str:
+    q = ingredient_name.split("(")[0].strip().replace("/", " ")
+    q = f"{q} food"
+    return f"https://source.unsplash.com/featured/600x400/?{q}"
+
+
+# =========================
+# Multi-dog session model
+# =========================
+
+def default_dog_profile(dog_id: str, label_index: int = 1) -> Dict:
+    return {
+        "id": dog_id,
+        "name": "",
+        "breed": "Mixed Breed / Unknown",
+        "age_years": 3.0,
+        "weight_kg": 10.0,
+        "neutered": True,
+        "activity": "Normal",
+        "special_flags": ["None"],
+        "meals_per_day": 2,
+        "assumed_kcal_per_g": 1.35,
+    }
+
+
+def dog_display_name(d: Dict, idx: int) -> str:
+    nm = (d.get("name") or "").strip()
+    if nm:
+        return nm
+    return f"Dog {idx}"
+
+
+if "dogs" not in st.session_state:
+    st.session_state.dogs = [default_dog_profile("dog-1", 1)]
+
+if "active_dog_id" not in st.session_state:
+    st.session_state.active_dog_id = st.session_state.dogs[0]["id"]
+
+if "taste_log" not in st.session_state:
+    st.session_state.taste_log = []  # entries with dog_id
+
+
+def get_active_dog() -> Dict:
+    for d in st.session_state.dogs:
+        if d["id"] == st.session_state.active_dog_id:
+            return d
+    st.session_state.active_dog_id = st.session_state.dogs[0]["id"]
+    return st.session_state.dogs[0]
+
+
+def update_active_dog(updates: Dict):
+    for i, d in enumerate(st.session_state.dogs):
+        if d["id"] == st.session_state.active_dog_id:
+            new_d = d.copy()
+            new_d.update(updates)
+            st.session_state.dogs[i] = new_d
+            return
+
+
+# =========================
+# Taste-informed preferences
+# =========================
+
+def pref_score_from_label(p: str) -> int:
+    return {"Dislike": 0, "Neutral": 1, "Like": 2, "Love": 3}.get(p, 1)
+
+
+def get_preference_maps(dog_id: str) -> Tuple[Dict[str, float], Dict[str, float]]:
+    """
+    Returns average preference score per protein and per veg for this dog.
+    """
+    entries = [e for e in st.session_state.taste_log if e.get("dog_id") == dog_id]
+    if not entries:
+        return {}, {}
+
+    df = pd.DataFrame(entries)
+    if df.empty:
+        return {}, {}
+
+    df["score"] = df["Preference"].map(pref_score_from_label)
+
+    protein_map = {}
+    veg_map = {}
+
+    if "Protein" in df.columns:
+        sub = df.dropna(subset=["Protein"])
+        if not sub.empty:
+            protein_map = sub.groupby("Protein")["score"].mean().to_dict()
+
+    if "Veg" in df.columns:
+        sub = df.dropna(subset=["Veg"])
+        if not sub.empty:
+            veg_map = sub.groupby("Veg")["score"].mean().to_dict()
+
+    return protein_map, veg_map
+
+
+def weighted_choice(rng: random.Random, items: List[str], weights: List[float]) -> str:
+    # safe fallback
+    if not items:
+        raise ValueError("weighted_choice received empty items")
+    if len(items) != len(weights):
+        raise ValueError("weighted_choice items/weights length mismatch")
+    total = sum(max(0.0, w) for w in weights)
+    if total <= 0:
+        return rng.choice(items)
+    r = rng.random() * total
+    acc = 0.0
+    for item, w in zip(items, weights):
+        w = max(0.0, w)
+        acc += w
+        if r <= acc:
+            return item
+    return items[-1]
+
+
+# =========================
+# Smarter rotation engine (with taste weighting)
 # =========================
 
 def pick_rotation_smart(
@@ -734,6 +833,9 @@ def pick_rotation_smart(
     pantry_carbs: List[str],
     allow_new: bool,
     recommendations: Dict[str, List[str]],
+    taste_meat_map: Dict[str, float],
+    taste_veg_map: Dict[str, float],
+    use_taste_weights: bool,
     days: int = 7,
     seed: Optional[int] = None
 ) -> List[Dict[str, str]]:
@@ -743,7 +845,6 @@ def pick_rotation_smart(
     all_vegs = filter_ingredients_by_category("Veg")
     all_carbs = filter_ingredients_by_category("Carb")
 
-    # Build pools
     if allow_new:
         meat_pool = list(dict.fromkeys(pantry_meats + recommendations.get("Meat", []) + all_meats))
         veg_pool = list(dict.fromkeys(pantry_vegs + recommendations.get("Veg", []) + all_vegs))
@@ -753,27 +854,45 @@ def pick_rotation_smart(
         veg_pool = pantry_vegs if pantry_vegs else all_vegs
         carb_pool = pantry_carbs if pantry_carbs else all_carbs
 
-    def choose(pool: List[str], last: Optional[str], last2: Optional[str]) -> str:
+    def taste_weight(name: str, m: Dict[str, float]) -> float:
+        # avg score 0..3
+        if not use_taste_weights:
+            return 1.0
+        s = m.get(name)
+        if s is None:
+            return 1.0
+        # convert to weight: dislike still possible but rare
+        return max(0.25, 0.25 + float(s))
+
+    def choose_with_anti_boredom(pool: List[str], last: Optional[str], last2: Optional[str],
+                                taste_map: Dict[str, float]) -> str:
         if not pool:
             return rng.choice(all_meats)
-        # avoid repeating same item 3 times in a row
-        candidates = pool
+
+        candidates = pool[:]
+
+        # avoid 3x repeats
         if last and last2 and last == last2:
-            candidates = [x for x in pool if x != last] or pool
-        # also reduce immediate repetition if possible
+            filtered = [x for x in candidates if x != last]
+            if filtered:
+                candidates = filtered
+
+        # reduce immediate repetition if possible
         if last and len(candidates) > 1:
-            non_last = [x for x in candidates if x != last]
-            if non_last:
-                candidates = non_last
-        return rng.choice(candidates)
+            filtered = [x for x in candidates if x != last]
+            if filtered:
+                candidates = filtered
+
+        weights = [taste_weight(x, taste_map) for x in candidates]
+        return weighted_choice(rng, candidates, weights)
 
     plan = []
     last_meat = last_meat2 = None
     last_veg = last_veg2 = None
 
     for _ in range(days):
-        meat = choose(meat_pool, last_meat, last_meat2)
-        veg = choose(veg_pool, last_veg, last_veg2) if veg_pool else rng.choice(all_vegs)
+        meat = choose_with_anti_boredom(meat_pool, last_meat, last_meat2, taste_meat_map)
+        veg = choose_with_anti_boredom(veg_pool, last_veg, last_veg2, taste_veg_map) if veg_pool else rng.choice(all_vegs)
         carb = rng.choice(carb_pool) if carb_pool else rng.choice(all_carbs)
 
         plan.append({"Meat": meat, "Veg": veg, "Carb": carb})
@@ -785,52 +904,126 @@ def pick_rotation_smart(
 
 
 # =========================
-# Ingredient image helper
+# Build shopping list
 # =========================
 
-def ingredient_image_url(ingredient_name: str) -> str:
+def build_weekly_shopping_list(plan_df: pd.DataFrame) -> pd.DataFrame:
     """
-    Lightweight external image source.
-    Uses Unsplash "featured" search.
-    Safe fallback even if blocked (image just won't load).
+    Expects columns: Meat, Veg, Carb, Daily Meat (g), Daily Veg (g), Daily Carb (g)
     """
-    q = ingredient_name.split("(")[0].strip()
-    q = q.replace("/", " ")
-    # make it more food-like
-    q = f"{q} food"
-    return f"https://source.unsplash.com/featured/600x400/?{q}"
+    totals = {}
+
+    def add_item(name: str, grams: float):
+        if not name or name == "—":
+            return
+        totals[name] = totals.get(name, 0.0) + float(grams)
+
+    for _, row in plan_df.iterrows():
+        add_item(row.get("Meat"), row.get("Daily Meat (g)", 0))
+        add_item(row.get("Veg"), row.get("Daily Veg (g)", 0))
+        add_item(row.get("Carb"), row.get("Daily Carb (g)", 0))
+
+    rows = []
+    for name, g in totals.items():
+        cat = INGREDIENTS.get(name).category if name in INGREDIENTS else "Unknown"
+        rows.append({
+            "Ingredient": name,
+            "Category": cat,
+            "Total grams (7 days)": round(g),
+            "Avg grams/day": round(g / 7.0, 1),
+        })
+
+    df = pd.DataFrame(rows)
+    if df.empty:
+        return df
+    return df.sort_values(["Category", "Ingredient"]).reset_index(drop=True)
+
+
+def build_category_prep_summary(shopping_df: pd.DataFrame) -> pd.DataFrame:
+    if shopping_df.empty:
+        return shopping_df
+    grp = shopping_df.groupby("Category")["Total grams (7 days)"].sum().reset_index()
+    grp["Total grams (7 days)"] = grp["Total grams (7 days)"].round().astype(int)
+    return grp.sort_values("Total grams (7 days)", ascending=False).reset_index(drop=True)
 
 
 # =========================
-# Session State
-# =========================
-
-if "taste_log" not in st.session_state:
-    st.session_state.taste_log = []
-
-
-# =========================
-# Sidebar - Dog Profile
+# Sidebar - Multi-dog control
 # =========================
 
 st.sidebar.markdown(f"## 🐶🍳 {APP_TITLE}")
 st.sidebar.caption("Cosmic-grade cooked fresh meal intelligence")
 
-dog_name = st.sidebar.text_input("Dog name", value="", placeholder="e.g., Luna, Mochi, Nova")
+dog_labels = [dog_display_name(d, i + 1) for i, d in enumerate(st.session_state.dogs)]
+label_to_id = {dog_labels[i]: st.session_state.dogs[i]["id"] for i in range(len(st.session_state.dogs))}
 
-breed = st.sidebar.selectbox("Breed", BREED_LIST, index=BREED_LIST.index("Mixed Breed / Unknown"))
+selected_label = st.sidebar.selectbox("Select dog profile", dog_labels, index=0)
+st.session_state.active_dog_id = label_to_id[selected_label]
+active_dog = get_active_dog()
 
+with st.sidebar.expander("➕ Add new dog profile", expanded=False):
+    new_name = st.text_input("New dog name", value="", key="new_dog_name")
+    new_breed = st.selectbox("New dog breed", BREED_LIST, index=BREED_LIST.index("Mixed Breed / Unknown"), key="new_dog_breed")
+    new_age = st.number_input("New dog age (years)", 0.1, 25.0, 2.0, 0.1, key="new_dog_age")
+    new_weight = st.number_input("New dog weight (kg)", 0.5, 90.0, 8.0, 0.1, key="new_dog_weight")
+    new_neut = st.toggle("Neutered/Spayed", True, key="new_dog_neut")
+    new_act = st.select_slider("Activity level", ["Low", "Normal", "High", "Athletic/Working"], value="Normal", key="new_dog_act")
+    new_flags = st.multiselect(
+        "Special considerations",
+        [
+            "None",
+            "Overweight / Weight loss goal",
+            "Sensitive stomach",
+            "Pancreatitis risk / Needs lower fat",
+            "Skin/coat concern",
+            "Very picky eater",
+            "Kidney concern (vet-managed)",
+            "Food allergy suspected",
+            "Joint/mobility support focus",
+        ],
+        default=["None"],
+        key="new_dog_flags"
+    )
+    if "None" in new_flags and len(new_flags) > 1:
+        new_flags = [f for f in new_flags if f != "None"]
+    new_meals = st.select_slider("Meals per day", [1, 2, 3, 4], value=2, key="new_dog_meals")
+    new_density = st.slider("Assumed energy density (kcal/g)", 1.0, 1.8, 1.35, 0.05, key="new_dog_density")
+
+    if st.button("Create profile", key="create_profile_btn"):
+        new_id = f"dog-{len(st.session_state.dogs) + 1}"
+        d = default_dog_profile(new_id, len(st.session_state.dogs) + 1)
+        d.update({
+            "name": new_name.strip(),
+            "breed": new_breed,
+            "age_years": float(new_age),
+            "weight_kg": float(new_weight),
+            "neutered": bool(new_neut),
+            "activity": new_act,
+            "special_flags": new_flags if new_flags else ["None"],
+            "meals_per_day": int(new_meals),
+            "assumed_kcal_per_g": float(new_density),
+        })
+        st.session_state.dogs.append(d)
+        st.session_state.active_dog_id = new_id
+        st.success("New dog profile added!")
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("### Edit active profile")
+
+dog_name = st.sidebar.text_input("Dog name", value=active_dog.get("name", ""))
+breed = st.sidebar.selectbox("Breed", BREED_LIST,
+                            index=BREED_LIST.index(active_dog.get("breed", "Mixed Breed / Unknown")))
 col_a, col_b = st.sidebar.columns(2)
 with col_a:
-    age_years = st.sidebar.number_input("Age (years)", min_value=0.1, max_value=25.0, value=3.0, step=0.1)
+    age_years = st.sidebar.number_input("Age (years)", 0.1, 25.0, float(active_dog.get("age_years", 3.0)), 0.1)
 with col_b:
-    weight_kg = st.sidebar.number_input("Weight (kg)", min_value=0.5, max_value=90.0, value=10.0, step=0.1)
+    weight_kg = st.sidebar.number_input("Weight (kg)", 0.5, 90.0, float(active_dog.get("weight_kg", 10.0)), 0.1)
 
-neutered = st.sidebar.toggle("Neutered/Spayed", value=True)
+neutered = st.sidebar.toggle("Neutered/Spayed", value=bool(active_dog.get("neutered", True)))
 activity = st.sidebar.select_slider(
     "Activity level",
     options=["Low", "Normal", "High", "Athletic/Working"],
-    value="Normal"
+    value=active_dog.get("activity", "Normal")
 )
 
 special_flags = st.sidebar.multiselect(
@@ -846,7 +1039,7 @@ special_flags = st.sidebar.multiselect(
         "Food allergy suspected",
         "Joint/mobility support focus",
     ],
-    default=["None"]
+    default=active_dog.get("special_flags", ["None"])
 )
 if "None" in special_flags and len(special_flags) > 1:
     special_flags = [f for f in special_flags if f != "None"]
@@ -854,14 +1047,28 @@ if "None" in special_flags and len(special_flags) > 1:
 meals_per_day = st.sidebar.select_slider(
     "Meals per day",
     options=[1, 2, 3, 4],
-    value=2
+    value=int(active_dog.get("meals_per_day", 2))
 )
 
 assumed_kcal_per_g = st.sidebar.slider(
     "Assumed energy density (kcal per gram of cooked mix)",
-    min_value=1.0, max_value=1.8, value=1.35, step=0.05,
-    help="Cooked fresh mixes vary widely. This converts calories into approximate daily grams."
+    1.0, 1.8, float(active_dog.get("assumed_kcal_per_g", 1.35)), 0.05
 )
+
+if st.sidebar.button("Save profile changes"):
+    update_active_dog({
+        "name": dog_name.strip(),
+        "breed": breed,
+        "age_years": float(age_years),
+        "weight_kg": float(weight_kg),
+        "neutered": bool(neutered),
+        "activity": activity,
+        "special_flags": special_flags if special_flags else ["None"],
+        "meals_per_day": int(meals_per_day),
+        "assumed_kcal_per_g": float(assumed_kcal_per_g),
+    })
+    st.sidebar.success("Profile updated!")
+
 
 st.sidebar.markdown("---")
 st.sidebar.caption("Educational tool; not a substitute for veterinary nutrition advice.")
@@ -871,7 +1078,8 @@ st.sidebar.caption("Educational tool; not a substitute for veterinary nutrition 
 # Top Banner
 # =========================
 
-name_phrase = f"for {dog_name}" if dog_name.strip() else "for your dog"
+title_name = dog_name.strip() or "Your dog"
+name_phrase = f"for {title_name}"
 
 st.markdown(
     f"""
@@ -879,11 +1087,13 @@ st.markdown(
       <h1>🐶🍲 {APP_TITLE}</h1>
       <p style="font-size: 1.05rem; opacity: 0.9;">
         {APP_SUBTITLE} <span class="badge">Cooked Fresh Focus</span>
+        <span class="badge">Multi-dog Mode</span>
+        <span class="badge">Taste-learning</span>
       </p>
       <div class="nebula-divider"></div>
       <p style="opacity: 0.9;">
         A high-end, rotation-based cooked fresh planner {name_phrase}. 
-        Build weekly menus, explore ingredient benefits, and shape a kinder, smarter routine.
+        Build weekly menus, explore ingredient benefits, and let preferences shape the next week.
       </p>
     </div>
     """,
@@ -925,8 +1135,6 @@ with tab_home:
         special_flags=special_flags
     )
 
-    title_name = dog_name.strip() or "Your dog"
-
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Name", title_name)
     c2.metric("Life stage", stage)
@@ -935,25 +1143,6 @@ with tab_home:
 
     st.caption(f"Breed size class: {size_class} · Meals/day: {meals_per_day}")
     st.caption(f"Context note: {explanation}")
-
-    st.markdown("### What this app can reveal")
-    show_system_map = st.toggle("Show Nebula System Map", value=True)
-    if show_system_map:
-        st.markdown(
-            """
-            <div class="nebula-card">
-              <h4>🧭 Your navigation paths</h4>
-              <ul>
-                <li><b>Ingredient Cosmos</b> — deep benefits/cautions plus a dynamic photo wall.</li>
-                <li><b>Ratio Lab</b> — compare presets and estimate daily grams.</li>
-                <li><b>7-Day Intelligent Plan</b> — pantry-aware rotation + smart suggestions.</li>
-                <li><b>Supplement Observatory</b> — conservative educational pairing logic.</li>
-                <li><b>Taste & Notes</b> — learn what your dog loves and refine future plans.</li>
-              </ul>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
 
     st.markdown("### Safety-first cooking principles")
     with st.expander("Open safety notes (important)"):
@@ -998,16 +1187,13 @@ with tab_ingredients:
         df_view = df_view[mask]
 
     df_view = df_view.sort_values(sort_key).reset_index(drop=True)
-
     st.dataframe(df_view, use_container_width=True, height=330)
 
-    # ---- NEW: Photo wall replacing Visual Nutrition Lens ----
     st.markdown("### Ingredient Photo Wall")
-    st.caption("Theme-friendly visual cues. If your deployment blocks external images, this section may appear blank.")
+    st.caption("Theme-friendly visual cues. If your deployment blocks external images, this may appear blank.")
 
     show_photos = st.toggle("Show ingredient photos", value=True)
     if show_photos:
-        # limit for performance
         preview_list = df_view["Ingredient"].tolist()[:12] if not df_view.empty else []
         if not preview_list:
             st.info("No ingredients match your filter.")
@@ -1078,7 +1264,6 @@ with tab_ratio:
             veg_pct = st.slider("Veg %", 15, 55, preset_obj.veg_pct)
         with c3:
             carb_pct = st.slider("Carb %", 0, 30, preset_obj.carb_pct)
-
         meat_pct, veg_pct, carb_pct = ensure_ratio_sum(meat_pct, veg_pct, carb_pct)
         st.caption(f"Normalized ratio: Meat {meat_pct}% · Veg {veg_pct}% · Carb {carb_pct}%")
 
@@ -1087,6 +1272,7 @@ with tab_ratio:
         weight_kg=weight_kg, age_years=age_years, activity=activity,
         neutered=neutered, special_flags=special_flags
     )
+
     daily_grams = estimate_food_grams_from_energy(mer_adj, assumed_kcal_per_g)
     meat_g, veg_g, carb_g = grams_for_day(daily_grams, meat_pct, veg_pct, carb_pct)
 
@@ -1098,7 +1284,7 @@ with tab_ratio:
     g4.metric("Carb target (g)", f"{carb_g:.0f}")
 
     st.markdown("### Macro energy lens (conceptual)")
-    cat_means = ingredient_df().groupby("Category")[["kcal/100g", "Protein(g)", "Fat(g)", "Carbs(g)"]].mean()
+    cat_means = ingredient_df().groupby("Category")[["kcal/100g"]].mean()
 
     def est_cat_kcal(cat: str, grams: float) -> float:
         if cat not in cat_means.index:
@@ -1134,7 +1320,6 @@ with tab_planner:
     all_meats = filter_ingredients_by_category("Meat")
     all_vegs = filter_ingredients_by_category("Veg")
     all_carbs = filter_ingredients_by_category("Carb")
-    all_treats = filter_ingredients_by_category("Treat")
 
     col_p1, col_p2, col_p3 = st.columns(3)
     with col_p1:
@@ -1146,16 +1331,19 @@ with tab_planner:
 
     st.markdown("### Human-friendly planning style")
 
-    col_mode1, col_mode2, col_mode3 = st.columns([1.1, 1.1, 1.6])
+    col_mode1, col_mode2, col_mode3, col_mode4 = st.columns([1.1, 1.1, 1.2, 1.6])
     with col_mode1:
         pantry_only = st.toggle("Pantry-only mode", value=False,
-                                help="If ON, the plan strictly uses what you selected above (fallback to all if empty).")
+                                help="Strictly uses selected pantry items (fallback to all if empty).")
     with col_mode2:
         allow_new = st.toggle("Smart rotation mode", value=True,
-                              help="If ON, the plan may suggest and include new ingredients to prevent boredom.")
+                              help="Allows new ingredients for variety and boredom prevention.")
     with col_mode3:
+        taste_mode = st.toggle("Taste-informed rotation", value=True,
+                               help="Uses your taste log to bias next week toward favorites.")
+    with col_mode4:
         include_fruit_toppers = st.toggle("Allow fruit toppers (small)", value=True,
-                                          help="Adds optional small fruit suggestions (Treat category).")
+                                          help="Adds small optional fruit suggestions.")
 
     stage = age_to_life_stage(age_years)
     recs = recommend_ingredients(stage, special_flags)
@@ -1203,6 +1391,7 @@ with tab_planner:
         weight_kg=weight_kg, age_years=age_years, activity=activity,
         neutered=neutered, special_flags=special_flags
     )
+
     daily_grams = estimate_food_grams_from_energy(mer_adj, assumed_kcal_per_g)
     meat_g, veg_g, carb_g = grams_for_day(daily_grams, meat_pct, veg_pct, carb_pct)
 
@@ -1216,8 +1405,8 @@ with tab_planner:
                      help="Change this to reshuffle the weekly rotation.")
     generate = st.button("✨ Generate 7-Day Nebula Plan")
 
-    # Determine whether new ingredients are allowed
     effective_allow_new = (allow_new and not pantry_only)
+    taste_meat_map, taste_veg_map = get_preference_maps(st.session_state.active_dog_id)
 
     if generate:
         rotation = pick_rotation_smart(
@@ -1226,11 +1415,13 @@ with tab_planner:
             pantry_carbs=pantry_carbs,
             allow_new=effective_allow_new,
             recommendations=recs,
+            taste_meat_map=taste_meat_map,
+            taste_veg_map=taste_veg_map,
+            use_taste_weights=taste_mode,
             days=7,
             seed=seed
         )
 
-        # optional fruit rotation suggestions (not part of macro grams)
         fruit_rotation = []
         if include_fruit_toppers and recs["Treat"]:
             rng = random.Random(seed + 7)
@@ -1239,12 +1430,12 @@ with tab_planner:
         else:
             fruit_rotation = [None] * 7
 
-        rows = []
         per_meal_total = daily_grams / meals_per_day
         per_meal_meat = meat_g / meals_per_day
         per_meal_veg = veg_g / meals_per_day
         per_meal_carb = carb_g / meals_per_day
 
+        rows = []
         for i, combo in enumerate(rotation, start=1):
             mg, vg, cg = grams_for_day(daily_grams, meat_pct, veg_pct, carb_pct)
             nut = day_nutrition_estimate(combo["Meat"], combo["Veg"], combo["Carb"], mg, vg, cg)
@@ -1293,14 +1484,48 @@ with tab_planner:
         )
         st.altair_chart(line, use_container_width=True)
 
-        st.markdown("### Variety explainers")
+        # ========== NEW: Shopping list + batch prep ==========
+        st.markdown("### 🧾 Weekly shopping list & batch-prep calculator")
+
+        shopping_df = build_weekly_shopping_list(plan_df)
+        if shopping_df.empty:
+            st.info("Shopping list is empty (unexpected). Try regenerating the plan.")
+        else:
+            cat_summary = build_category_prep_summary(shopping_df)
+
+            csum1, csum2 = st.columns([1, 2])
+            with csum1:
+                st.markdown("**Category totals**")
+                st.dataframe(cat_summary, use_container_width=True, height=220)
+            with csum2:
+                st.markdown("**Ingredient totals (7 days)**")
+                st.dataframe(shopping_df, use_container_width=True, height=220)
+
+            csv_bytes = shopping_df.to_csv(index=False).encode("utf-8")
+            st.download_button(
+                label="⬇️ Download shopping list (CSV)",
+                data=csv_bytes,
+                file_name=f"{title_name.lower().replace(' ', '_')}_shopping_list.csv",
+                mime="text/csv"
+            )
+
+            with st.expander("Batch-prep guidance (human-friendly)"):
+                total_week = int(cat_summary["Total grams (7 days)"].sum())
+                st.write(
+                    f"""
+                    - **Estimated total cooked mix for 7 days:** ~{total_week} g  
+                    - You can batch-cook proteins and carbs separately, then steam veggies fresh every 1–2 days.
+                    - If your dog is picky, reserve 1–2 “flex days” to swap in a favorite protein.
+                    """
+                )
+
         with st.expander("How this plan reduces boredom"):
             st.write(
                 """
-                - The rotation engine avoids repeating the same meat or vegetable too many days in a row.
-                - When Smart rotation mode is ON, the planner can blend:
-                  your pantry + recommended additions + the broader ingredient library.
-                - This creates a more natural, human-like weekly rhythm.
+                - Anti-boredom rules reduce consecutive repetition of the same meat/veg.
+                - When Smart rotation mode is ON, the planner combines:
+                  your pantry + recommended additions + full library.
+                - Taste-informed rotation softly biases toward what your dog loves.
                 """
             )
 
@@ -1396,17 +1621,16 @@ with tab_supp:
 
 
 # =========================
-# 6) Taste & Notes
+# 6) Taste & Notes (per-dog)
 # =========================
 
 with tab_feedback:
-    title_name = dog_name.strip() or "Your dog"
     st.markdown(f"### Taste tracking capsule for {title_name}")
 
     st.write(
         """
         Record how your dog responds to different proteins and vegetables.
-        This log stays in your session and helps you refine future plan iterations.
+        This log stays in your session and helps the next week's planner learn preferences.
         """
     )
 
@@ -1426,7 +1650,8 @@ with tab_feedback:
 
     if st.button("🧪 Add taste entry"):
         entry = {
-            "Dog Name": dog_name.strip() or None,
+            "dog_id": st.session_state.active_dog_id,
+            "Dog Name": title_name,
             "Breed": breed,
             "Age (y)": round(age_years, 2),
             "Weight (kg)": round(weight_kg, 2),
@@ -1436,12 +1661,15 @@ with tab_feedback:
             "Notes": notes.strip(),
         }
         st.session_state.taste_log.append(entry)
-        st.success("Entry added to session log.")
+        st.success("Entry added to this dog's session log.")
 
-    if st.session_state.taste_log:
-        log_df = pd.DataFrame(st.session_state.taste_log)
+    # Filter log for active dog
+    dog_entries = [e for e in st.session_state.taste_log if e.get("dog_id") == st.session_state.active_dog_id]
 
-        st.markdown("### Session taste log")
+    if dog_entries:
+        log_df = pd.DataFrame(dog_entries)
+
+        st.markdown("### This dog's taste log")
         st.dataframe(log_df, use_container_width=True, height=260)
 
         st.markdown("### Preference summary")
@@ -1468,7 +1696,7 @@ with tab_feedback:
                         y=alt.Y("Protein:N", sort="-x"),
                         tooltip=["Protein", alt.Tooltip("Avg Preference Score:Q", format=".2f")]
                     )
-                    .properties(height=240, title="Protein preference (session)")
+                    .properties(height=240, title="Protein preference (this dog)")
                 )
                 st.altair_chart(bar, use_container_width=True)
             else:
@@ -1488,7 +1716,7 @@ with tab_feedback:
                         y=alt.Y("Vegetable:N", sort="-x"),
                         tooltip=["Vegetable", alt.Tooltip("Avg Preference Score:Q", format=".2f")]
                     )
-                    .properties(height=240, title="Vegetable preference (session)")
+                    .properties(height=240, title="Vegetable preference (this dog)")
                 )
                 st.altair_chart(bar, use_container_width=True)
             else:
@@ -1497,13 +1725,13 @@ with tab_feedback:
         with st.expander("How to use this data"):
             st.write(
                 """
-                - If a protein is consistently disliked, remove it from pantry selection.
-                - If a vegetable correlates with softer stool, reduce its share or rotate less often.
+                - The planner can now bias future weeks toward loved proteins/veggies.
+                - If a food is consistently disliked, remove it from pantry selection.
                 - If you suspect allergies, consider a vet-guided elimination approach.
                 """
             )
     else:
-        st.info("Your taste log is empty. Add entries to unlock preference analytics.")
+        st.info("This dog's taste log is empty. Add entries to unlock preference-learning.")
 
 
 # =========================
